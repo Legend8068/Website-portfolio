@@ -1,0 +1,12 @@
+/* FIXED: Removed max-width constraint that was limiting the layout */
+#root {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Remove any default text centering */
+body, #root {
+  text-align: left;
+}
