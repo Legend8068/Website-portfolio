@@ -14,6 +14,8 @@ export default function Ayush_portfolio() {
   const maskDataRef = useRef(null);
 
   const [activeSection, setActiveSection] = useState('home');
+  const [heroWordIndex, setHeroWordIndex] = useState(0);
+  const heroWords = [['Software', 'Engineer'], ['Creative', 'Developer'], ['Problem', 'Solver'], ['Tech', 'Enthusiast']];
 
   const ACCENT = '#f0c040';
   const BG_DARK = '#0a1628';
@@ -223,6 +225,17 @@ export default function Ayush_portfolio() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // ── Hero Word Cycling ────────────────────────────────────────────────────
+  useEffect(() => {
+    let intervalId;
+    const timeoutId = setTimeout(() => {
+      intervalId = setInterval(() => {
+        setHeroWordIndex(prev => (prev + 1) % 4);
+      }, 4000);
+    }, 4500); // Wait for initial slower decryption to finish
+    return () => { clearTimeout(timeoutId); if (intervalId) clearInterval(intervalId); };
+  }, []);
+
   // ── Portal Mask Computation ─────────────────────────────────────────────
   useEffect(() => {
     const computeMask = () => {
@@ -230,46 +243,33 @@ export default function Ayush_portfolio() {
       if (!wrapper) return;
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      // Pill dimensions — capsule shape centered in viewport (enlarged for vertical text)
-      const pillW = Math.min(vw * 0.22, 360);
-      const pillH = vh * 0.85;
-      const cx = vw / 2, cy = vh / 2;
-      const r = pillW / 2;
-      const left = cx - r, right = cx + r;
-      const top = cy - pillH / 2, bottom = cy + pillH / 2;
-      // Full viewport rect
-      const dRect = `M -1 0 L ${vw + 2} 0 L ${vw + 2} ${vh} L -1 ${vh} Z`;
-      // Capsule pill path
-      const dPill = `M ${left} ${top + r} A ${r} ${r} 0 0 1 ${right} ${top + r} L ${right} ${bottom - r} A ${r} ${r} 0 0 1 ${left} ${bottom - r} Z`;
-      // Inner border pill (inset by thickness for border effect)
-      const th = vw > 767 ? 12 : 6;
-      const iL = left + th, iR = right - th, iT = top + th, iB = bottom - th;
-      const iRad = (iR - iL) / 2;
-      const dInnerPill = `M ${iL} ${iT + iRad} A ${iRad} ${iRad} 0 0 1 ${iR} ${iT + iRad} L ${iR} ${iB - iRad} A ${iRad} ${iRad} 0 0 1 ${iL} ${iB - iRad} Z`;
-      // Grid lines
-      const vLines = vw > 767 ? 12 : 8;
-      let dLines = '';
-      for (let i = 1; i < vLines; i++) dLines += `M ${(vw / vLines) * i} 0 L ${(vw / vLines) * i} ${vh} `;
-      const hGap = vh * 0.1;
-      for (let i = 0; i <= Math.ceil(vh / hGap); i++) dLines += `M 0 ${hGap * i} L ${vw} ${hGap * i} `;
+      // Store viewport dimensions for scroll handler
+      // Pill initial insets: horizontal = (100% - pillWidth%) / 2, vertical = (100% - pillHeight%) / 2
+      const pillWidthPct = Math.min(22, 360 / vw * 100); // ~22% of viewport width
+      const pillHeightPct = 80; // 80% of viewport height
+      const insetX = (100 - pillWidthPct) / 2; // ~39%
+      const insetY = (100 - pillHeightPct) / 2; // ~10%
+      maskDataRef.current = { vw, vh, insetX, insetY };
 
-      maskDataRef.current = { maxScale: vw / r };
-
+      // Build grid lines SVG
       const svg = wrapper.querySelector('[data-portal-svg]');
-      if (!svg) return;
-      svg.setAttribute('viewBox', `0 0 ${vw} ${vh}`);
-      svg.querySelector('[data-mask-outer]')?.setAttribute('d', `${dRect} ${dPill}`);
-      svg.querySelector('[data-mask-inner]')?.setAttribute('d', `${dRect} ${dInnerPill}`);
-      svg.querySelector('[data-grid-clip]')?.setAttribute('d', `${dRect} ${dPill}`);
-      const linesEl = svg.querySelector('[data-mask-lines]');
-      if (linesEl) linesEl.setAttribute('d', dLines);
+      if (svg) {
+        svg.setAttribute('viewBox', `0 0 ${vw} ${vh}`);
+        const vLines = vw > 767 ? 12 : 8;
+        let dLines = '';
+        for (let i = 1; i < vLines; i++) dLines += `M ${(vw / vLines) * i} 0 L ${(vw / vLines) * i} ${vh} `;
+        const hGap = vh * 0.1;
+        for (let i = 0; i <= Math.ceil(vh / hGap); i++) dLines += `M 0 ${hGap * i} L ${vw} ${hGap * i} `;
+        const linesEl = svg.querySelector('[data-mask-lines]');
+        if (linesEl) linesEl.setAttribute('d', dLines);
+      }
     };
     computeMask();
     window.addEventListener('resize', computeMask);
     return () => window.removeEventListener('resize', computeMask);
   }, []);
 
-  // ── Zoom Transition (scroll-driven SVG mask) ──────────────────────────
+  // ── Zoom Transition (scroll-driven CSS clip-path pill) ────────────────
   useEffect(() => {
     const handleScroll = () => {
       const wrapper = zoomWrapperRef.current;
@@ -278,43 +278,46 @@ export default function Ayush_portfolio() {
       const scrollable = wrapper.offsetHeight - window.innerHeight;
       if (scrollable <= 0) return;
       const raw = Math.max(0, Math.min(1, -rect.top / scrollable));
-      const t = raw < 0.5 ? 4 * raw * raw * raw : 1 - Math.pow(-2 * raw + 2, 3) / 2;
-      const { maxScale } = maskDataRef.current;
+      const { insetX, insetY } = maskDataRef.current;
 
-      // Scale the mask (SVG pill cutout grows to fill viewport)
-      const scaler = wrapper.querySelector('[data-mask-scaler]');
-      if (scaler) scaler.style.transform = `scale(${1 + t * (maxScale - 1)})`;
+      // ── 1. Dark scene clip-path: pill window grows from small capsule to full viewport
+      //    clip-path: inset(Y% X% round 9999px) on the dark scene
+      //    round 9999px guarantees a perfect capsule at ALL sizes
+      const scene = wrapper.querySelector('[data-portal-scene]');
+      if (scene) {
+        const t = Math.pow(raw, 3); // ease-in: slow start, fast finish
+        // Overshoot to -15% so the 9999px rounded corners extend beyond viewport
+        const curInsetX = insetX - t * (insetX + 15);
+        const curInsetY = insetY - t * (insetY + 15);
+        // Apply capsule clip-path — at t=1 insets are -15%, pushing corners off-screen
+        scene.style.clipPath = `inset(${curInsetY}% ${curInsetX}% round 9999px)`;
+        // Scene scales from 0.82 to 1.0 for depth effect
+        const sceneT = Math.pow(raw, 4);
+        const sceneScale = 0.82 + sceneT * 0.18;
+        scene.style.transform = `scale(${sceneScale})`;
+      }
 
-      // "Explore" text: scroll DOWN into pill from above, center, then zoom
+      // ── 2. "EXPLORE" text: slides down into pill, then fades
       const exploreEl = wrapper.querySelector('[data-explore-text]');
       if (exploreEl) {
-        if (t < 0.4) {
-          // Phase 1: scroll downward into the pill center (translateY from -120% to 0%)
-          const scrollProgress = t / 0.4;
-          const yOffset = -(1 - scrollProgress) * 120;
-          const opacity = Math.min(1, scrollProgress * 2);
-          exploreEl.style.transform = `translateY(${yOffset}%) scale(1)`;
-          exploreEl.style.opacity = opacity;
-        } else if (t < 0.7) {
-          // Phase 2: centered, zoom in
-          const zoomProgress = (t - 0.4) / 0.3;
-          const scale = 1 + zoomProgress * 2.5;
-          exploreEl.style.transform = `translateY(0%) scale(${scale})`;
-          exploreEl.style.opacity = Math.max(0, 1 - zoomProgress * 1.2);
+        if (raw < 0.2) {
+          const slideP = raw / 0.2;
+          const yOff = -(1 - slideP) * 130;
+          exploreEl.style.transform = `translateY(${yOff}%)`;
+          exploreEl.style.opacity = Math.min(1, slideP * 2.5);
+        } else if (raw < 0.45) {
+          const fadeP = (raw - 0.2) / 0.25;
+          exploreEl.style.transform = 'translateY(0%)';
+          exploreEl.style.opacity = Math.max(0, 1 - fadeP);
         } else {
-          // Phase 3: fully zoomed and faded out
-          exploreEl.style.transform = `translateY(0%) scale(3.5)`;
+          exploreEl.style.transform = 'translateY(0%)';
           exploreEl.style.opacity = 0;
         }
       }
 
-      // Inner content fades in
+      // ── 3. Inner content fades in once through the portal
       const inner = wrapper.querySelector('[data-zoom-content]');
-      if (inner) inner.style.opacity = Math.max(0, Math.min(1, (t - 0.65) / 0.25));
-
-      // Scene subtle zoom-in
-      const scene = wrapper.querySelector('[data-portal-scene]');
-      if (scene) scene.style.transform = `scale(${0.85 + t * 0.15})`;
+      if (inner) inner.style.opacity = Math.max(0, Math.min(1, (raw - 0.8) / 0.15));
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
@@ -335,13 +338,18 @@ export default function Ayush_portfolio() {
   const skills = ['JavaScript', 'React', 'Python', 'Node.js', 'Three.js', 'TypeScript', 'Git', 'Java', 'Algorithms', 'Data Structures', 'CSS', 'HTML'];
   const exps = [
     { title: "Computer Science & Design", company: "SUTD", period: "2024 — 2028", desc: "Undergraduate studying Computer Science & Design at Singapore University of Technology and Design.", skills: ["Python", "JavaScript", "React", "AI & ML"] },
-    { title: "Events & Welfare Leader", company: "ROOT SUTD Student Government", period: "2024 — Present", desc: "Planning and executing welfare events for the community including treasure hunts and the SUTD Student Organisation Showcase.", skills: ["Leadership", "Event Planning", "Community"] },
+    { title: "Events & Welfare Director", company: "Student Government", period: "2025 — Present", desc: "Planning and executing welfare events for the community including treasure hunts and the SUTD Student Organisation Showcase.", skills: ["Leadership", "Event Planning", "Community"] },
     { title: "Biodiversity Conservation", company: "ACCB Cambodia", period: "2023", desc: "Worked with Angkor Centre for Conservation of Biodiversity in Siem Reap for the rehabilitation and conservation of endangered species.", skills: ["Conservation", "Fieldwork", "Teamwork"] },
-    { title: "Club Treasurer", company: "Tchoukball Club SUTD", period: "2024 — Present", desc: "Handling all finance planning as well as general planning for training and welfare purposes.", skills: ["Finance", "Planning", "Team Management"] }
+    { title: "Club Treasurer", company: "Tchoukball Club SUTD", period: "2025 — Present", desc: "Handling all finance planning as well as general planning for training and welfare purposes.", skills: ["Finance", "Planning", "Team Management"] },
+    { title: "Crackerjack Convention", company: "SUTD", period: "2023", desc: "Participated in the Crackerjack Convention, a multi disciplinary event bringing together innovators, designers, and engineers to collaborate and tackle real world 21st century challenges with creative solutions.", skills: ["Innovation", "Design Thinking", "Collaboration"] },
+    { title: "What The Hack", company: "SUTD", period: "2024", desc: "Participated in this hackathon combining hardware and software, producing an automated medicine pill box dispenser.", skills: ["Hardware", "Software", "IoT"] },
+    { title: "Maritime Hackathon", company: "NUS", period: "2025", desc: "Produced an analytics and dashboard solution for visualising different statistics for maritime companies.", skills: ["Data Analytics", "Dashboard", "Full-Stack"] },
+    { title: "SIM UOL CSSC Hackathon", company: "SIM", period: "2024", desc: "Designed and built a 3 level maze running and combat game within the hackathon timeframe.", skills: ["Game Dev", "Problem Solving", "Teamwork"] },
+    { title: "CatalystX Startathon", company: "NTU", period: "2024", desc: "Won $200 Most Creative Idea prize for a biofuels startup concept aimed at making sustainable fuels more prevalent in daily life.", skills: ["Entrepreneurship", "Pitching", "Sustainability"] }
   ];
   const projs = [
     { title: "SG MeetHalfway", desc: "Web app that finds the optimal meeting spot between multiple people using geolocation and transit data", tech: ["React", "Mapbox", "Google Places API"], color: "#f0c040", link: "https://sg-meet-halfway.vercel.app/" },
-    { title: "Portfolio Website (In Progress)", desc: "Interactive personal portfolio featuring dynamic geometry networks, scroll-driven SVG portal transitions, and decrypted text effects.", tech: ["React", "Three.js", "JavaScript"], color: "#e07850" },
+    { title: "Portfolio Website (In Progress)", desc: "Interactive personal portfolio featuring dynamic geometry networks, scroll driven SVG portal transitions, and decrypted text effects.", tech: ["React", "Three.js", "JavaScript"], color: "#e07850" },
     { title: "Telegram Task Bot (In Progress)", desc: "Telegram bot to assist in task and deadline management for better convenience.", tech: ["Python", "Telegram API", "Automation"], color: "#50a0d0" }
   ];
 
@@ -380,12 +388,12 @@ export default function Ayush_portfolio() {
           <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 'clamp(11px, 0.9vw, 14px)', letterSpacing: '6px', fontFamily: 'monospace', marginBottom: 'clamp(20px, 2vw, 40px)', textTransform: 'uppercase' }}>Ayush Singh &middot; Portfolio</p>
 
           <h1 style={{ fontSize: 'clamp(48px, 10vw, 180px)', fontWeight: 700, lineHeight: 0.9, margin: '0 0 clamp(28px, 3vw, 48px) 0', letterSpacing: '-0.03em', textTransform: 'uppercase' }}>
-            <DecryptedText text="Aspiring" speed={35} maxIterations={15} animateOn="view" sequential revealDirection="start" parentStyle={{ display: 'block' }} />
+            <DecryptedText text="Aspiring" speed={55} maxIterations={20} animateOn="view" sequential revealDirection="start" parentStyle={{ display: 'block' }} />
             <span style={{ color: ACCENT }}>
-              <DecryptedText text="Software" speed={30} maxIterations={18} animateOn="view" sequential revealDirection="start" parentStyle={{ display: 'block' }} encryptedStyle={{ color: `${ACCENT}88` }} />
+              <DecryptedText key={`hw-${heroWordIndex}-0`} text={heroWords[heroWordIndex][0]} speed={heroWordIndex === 0 ? 65 : 40} maxIterations={heroWordIndex === 0 ? 28 : 16} animateOn="view" sequential revealDirection="start" parentStyle={{ display: 'block' }} encryptedStyle={{ color: `${ACCENT}88` }} />
             </span>
             <span style={{ color: ACCENT }}>
-              <DecryptedText text="Engineer" speed={28} maxIterations={18} animateOn="view" sequential revealDirection="start" parentStyle={{ display: 'block' }} encryptedStyle={{ color: `${ACCENT}88` }} />
+              <DecryptedText key={`hw-${heroWordIndex}-1`} text={heroWords[heroWordIndex][1]} speed={heroWordIndex === 0 ? 60 : 38} maxIterations={heroWordIndex === 0 ? 25 : 14} animateOn="view" sequential revealDirection="start" parentStyle={{ display: 'block' }} encryptedStyle={{ color: `${ACCENT}88` }} />
             </span>
           </h1>
 
@@ -394,15 +402,15 @@ export default function Ayush_portfolio() {
           </p>
 
           <div style={{ display: 'flex', gap: 'clamp(12px, 1.2vw, 20px)', flexWrap: 'wrap', justifyContent: 'center', marginBottom: 'clamp(48px, 6vw, 80px)' }}>
-            <button onClick={() => scrollTo('projects')} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: 'clamp(14px, 1.2vw, 22px) clamp(28px, 2.4vw, 44px)', background: ACCENT, color: BG_DARK, fontSize: 'clamp(15px, 1.2vw, 20px)', fontWeight: 700, border: 'none', borderRadius: '12px', cursor: 'pointer', ...hov }}>
-              View Projects <ArrowRight size={20} />
+            <button data-hover-btn-primary onClick={() => scrollTo('projects')} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: 'clamp(14px, 1.2vw, 22px) clamp(28px, 2.4vw, 44px)', background: ACCENT, color: BG_DARK, fontSize: 'clamp(15px, 1.2vw, 20px)', fontWeight: 700, border: 'none', borderRadius: '12px', cursor: 'pointer' }}>
+              View Projects <span data-arrow style={{ display: 'inline-flex' }}><ArrowRight size={20} /></span>
             </button>
-            <button onClick={() => scrollTo('contact')} style={{ padding: 'clamp(14px, 1.2vw, 22px) clamp(28px, 2.4vw, 44px)', background: 'transparent', color: '#fff', fontSize: 'clamp(15px, 1.2vw, 20px)', fontWeight: 500, border: '1.5px solid rgba(255,255,255,0.25)', borderRadius: '12px', cursor: 'pointer', ...hov }}>Contact Me</button>
+            <button data-hover-btn-secondary onClick={() => scrollTo('contact')} style={{ padding: 'clamp(14px, 1.2vw, 22px) clamp(28px, 2.4vw, 44px)', background: 'transparent', color: '#fff', fontSize: 'clamp(15px, 1.2vw, 20px)', fontWeight: 500, border: '1.5px solid rgba(255,255,255,0.25)', borderRadius: '12px', cursor: 'pointer' }}>Contact Me</button>
           </div>
 
           <div style={{ display: 'flex', gap: '14px', justifyContent: 'center' }}>
             {[{ Icon: Github, href: 'https://github.com/Legend8068' }, { Icon: Linkedin, href: 'https://www.linkedin.com/in/ayush-singh0606' }, { Icon: Mail, href: 'mailto:ayushsinghsolanki06@gmail.com' }].map(({ Icon, href }, i) => (
-              <a key={i} href={href} target="_blank" rel="noopener noreferrer" style={{ width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: BG_CARD, border: `1px solid ${ACCENT}20`, borderRadius: '12px', color: 'rgba(255,255,255,0.5)', textDecoration: 'none', ...hov }}><Icon size={20} /></a>
+              <a key={i} href={href} target="_blank" rel="noopener noreferrer" data-hover-icon style={{ width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: BG_CARD, border: `1px solid ${ACCENT}20`, borderRadius: '12px', color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}><Icon size={20} /></a>
             ))}
           </div>
         </div>
@@ -438,13 +446,23 @@ export default function Ayush_portfolio() {
       {/* ═══════════════════ PORTAL ZOOM TRANSITION ═══════════════════ */}
       <div ref={zoomWrapperRef} style={{ height: '300vh', position: 'relative', background: ACCENT, clipPath: 'inset(0)' }}>
 
-        {/* Dark scene — fixed but contained by clipPath on wrapper */}
-        <div data-portal-scene style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: BG_DIMENSION, display: 'flex', alignItems: 'center', justifyContent: 'center', perspective: '40rem', willChange: 'transform', transformOrigin: 'center center', zIndex: 1 }}>
+        {/* Grid lines on the gold background */}
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0, pointerEvents: 'none' }}>
+          <svg data-portal-svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}>
+            <path data-mask-lines fill="none" stroke={BG_DARK} strokeWidth="1" strokeOpacity="0.18" d="" />
+          </svg>
+        </div>
 
-          {/* "Explore" text — vertical, scrolls down into pill, then zooms */}
-          <div data-explore-text style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.15em', fontWeight: 900, color: ACCENT, textTransform: 'uppercase', willChange: 'transform, opacity', zIndex: 3, opacity: 0, transform: 'translateY(-120%) scale(1)', fontSize: 'clamp(28px, 4.5vw, 58px)', letterSpacing: '0.05em' }}>
+        {/* Dark scene — clipped to pill shape, visible through the capsule window */}
+        <div data-portal-scene style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: BG_DIMENSION, display: 'flex', alignItems: 'center', justifyContent: 'center', willChange: 'transform, clip-path', transformOrigin: 'center center', transform: 'scale(0.82)', clipPath: 'inset(10% 39% round 9999px)', zIndex: 2 }}>
+
+          {/* Pill border glow */}
+          <div style={{ position: 'absolute', inset: 0, borderRadius: '9999px', boxShadow: `inset 0 0 60px ${ACCENT}20, 0 0 80px ${ACCENT}15`, pointerEvents: 'none', zIndex: 5 }} />
+
+          {/* "Explore" text — vertical, slides down into pill, then fades */}
+          <div data-explore-text style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.12em', fontWeight: 900, color: ACCENT, textTransform: 'uppercase', willChange: 'transform, opacity', zIndex: 3, opacity: 0, transform: 'translateY(-130%)', fontSize: 'clamp(32px, 5vw, 64px)', letterSpacing: '0.04em' }}>
             {'EXPLORE'.split('').map((letter, i) => (
-              <span key={i} style={{ lineHeight: 1 }}>{letter}</span>
+              <span key={i} style={{ lineHeight: 1, display: 'block' }}>{letter}</span>
             ))}
           </div>
 
@@ -459,22 +477,6 @@ export default function Ayush_portfolio() {
           </div>
         </div>
 
-        {/* SVG Mask overlay — gold fill with pill-shaped cutout (evenodd) */}
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', overflow: 'hidden', pointerEvents: 'none', zIndex: 2 }}>
-          <div data-mask-scaler style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', willChange: 'transform', transformOrigin: 'center center' }}>
-            <svg data-portal-svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}>
-              <defs>
-                <clipPath id="portal-grid-clip" clipPathUnits="userSpaceOnUse">
-                  <path data-grid-clip fillRule="evenodd" d="" />
-                </clipPath>
-              </defs>
-              <path data-mask-outer fillRule="evenodd" fill={ACCENT} stroke={BG_DARK} strokeWidth="1" d="" />
-              <path data-mask-inner fillRule="evenodd" fill={ACCENT} stroke={BG_DARK} strokeWidth="0.5" d="" />
-              <path data-mask-lines clipPath="url(#portal-grid-clip)" fill="none" stroke={BG_DARK} strokeWidth="1" strokeOpacity="0.25" d="" />
-            </svg>
-          </div>
-        </div>
-
       </div>
 
       {/* ═══════════════════ EXPERIENCE ═══════════════════ */}
@@ -484,12 +486,10 @@ export default function Ayush_portfolio() {
           <h2 style={{ fontSize: 'clamp(32px, 5vw, 80px)', fontWeight: 700, marginBottom: 'clamp(48px, 5vw, 80px)', lineHeight: 1.05 }}>Professional journey.</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: 'clamp(20px, 2.5vw, 36px)' }}>
             {exps.map((e, i) => (
-              <div key={i} data-reveal style={{ ...revealCard(i * 0.12), padding: 'clamp(24px, 2.5vw, 40px)', background: BG_CARD, border: `1px solid ${ACCENT}18`, borderRadius: '20px', backdropFilter: 'blur(8px)', ...hov }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
-                  <div>
-                    <h3 style={{ fontSize: 'clamp(18px, 1.6vw, 28px)', fontWeight: 700, marginBottom: '8px' }}>{e.title}</h3>
-                    <p style={{ color: ACCENT, fontSize: 'clamp(13px, 1.1vw, 18px)', display: 'flex', alignItems: 'center', gap: '8px' }}><Briefcase size={16} /> {e.company}</p>
-                  </div>
+              <div key={i} data-reveal data-hover-lift style={{ ...revealCard(i * 0.12), padding: 'clamp(24px, 2.5vw, 40px)', background: BG_CARD, border: `1px solid ${ACCENT}18`, borderRadius: '20px', backdropFilter: 'blur(8px)', cursor: 'default' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '16px' }}>
+                  <h3 style={{ fontSize: 'clamp(18px, 1.6vw, 28px)', fontWeight: 700, marginBottom: '4px' }}>{e.title}</h3>
+                  <p style={{ color: ACCENT, fontSize: 'clamp(13px, 1.1vw, 18px)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0, marginBottom: '2px' }}><Briefcase size={16} /> {e.company}</p>
                   <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 'clamp(12px, 0.9vw, 15px)', fontFamily: 'monospace', letterSpacing: '1px', whiteSpace: 'nowrap' }}>{e.period}</span>
                 </div>
                 <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 'clamp(14px, 1.15vw, 19px)', lineHeight: 1.7 }}>{e.desc}</p>
@@ -506,7 +506,7 @@ export default function Ayush_portfolio() {
           <h2 style={{ fontSize: 'clamp(32px, 5vw, 80px)', fontWeight: 700, marginBottom: 'clamp(48px, 5vw, 80px)', lineHeight: 1.05 }}>Featured work.</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: 'clamp(20px, 2.5vw, 36px)' }}>
             {projs.map((p, i) => (
-              <div key={i} data-reveal onClick={() => p.link && window.open(p.link, '_blank')} style={{ ...revealCard(i * 0.12), padding: 'clamp(24px, 2.5vw, 40px)', background: BG_CARD, border: `1px solid ${p.color}30`, borderRadius: '20px', cursor: p.link ? 'pointer' : 'default', backdropFilter: 'blur(8px)', ...(p.link ? hov : {}) }}>
+              <div key={i} data-reveal data-hover-lift onClick={() => p.link && window.open(p.link, '_blank')} style={{ ...revealCard(i * 0.12), padding: 'clamp(24px, 2.5vw, 40px)', background: BG_CARD, border: `1px solid ${p.color}30`, borderRadius: '20px', cursor: p.link ? 'pointer' : 'default', backdropFilter: 'blur(8px)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'clamp(18px, 1.8vw, 30px)' }}>
                   <Code size={40} color={p.color} />
                   <ExternalLink size={22} color={p.link ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.3)"} />
@@ -529,15 +529,15 @@ export default function Ayush_portfolio() {
           <h2 style={{ fontSize: 'clamp(36px, 5vw, 80px)', fontWeight: 700, marginBottom: 'clamp(16px, 1.5vw, 24px)', lineHeight: 1.05 }}>Let's Build Something<span style={{ color: ACCENT }}> Together.</span></h2>
           <p style={{ fontSize: 'clamp(16px, 1.3vw, 22px)', color: 'rgba(255,255,255,0.4)', lineHeight: 1.7, marginBottom: 'clamp(48px, 5vw, 80px)', maxWidth: '600px' }}>Whether you have a project idea, a question, or just want to connect — I'd love to hear from you.</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: 'clamp(20px, 2.5vw, 36px)', marginBottom: 'clamp(48px, 5vw, 80px)' }}>
-            <div data-reveal style={{ ...revealCard(0), padding: 'clamp(28px, 3vw, 48px)', background: BG_CARD, border: `1px solid ${ACCENT}18`, borderRadius: '24px', backdropFilter: 'blur(8px)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', ...hov }}>
+            <div data-reveal data-hover-lift style={{ ...revealCard(0), padding: 'clamp(28px, 3vw, 48px)', background: BG_CARD, border: `1px solid ${ACCENT}18`, borderRadius: '24px', backdropFilter: 'blur(8px)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
               <div style={{ width: 'clamp(72px, 6vw, 96px)', height: 'clamp(72px, 6vw, 96px)', background: `${ACCENT}10`, borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 'clamp(20px, 2vw, 32px)' }}><FileText size={36} color={ACCENT} /></div>
               <h3 style={{ fontSize: 'clamp(20px, 1.8vw, 30px)', fontWeight: 700, marginBottom: '10px' }}>My Resume</h3>
               <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 'clamp(14px, 1.1vw, 18px)', lineHeight: 1.7, marginBottom: 'clamp(24px, 2.5vw, 40px)' }}>Download my resume to learn more about my education, skills, and experiences.</p>
-              <a href="/Ayush Singh resume.pdf" download style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', padding: 'clamp(12px, 1.1vw, 20px) clamp(24px, 2.2vw, 40px)', background: ACCENT, color: BG_DARK, fontSize: 'clamp(14px, 1.1vw, 18px)', fontWeight: 700, borderRadius: '14px', textDecoration: 'none', ...hov }}><Download size={20} /> Download</a>
+              <a href="/Ayush Singh resume.pdf" download data-hover-btn-primary style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', padding: 'clamp(12px, 1.1vw, 20px) clamp(24px, 2.2vw, 40px)', background: ACCENT, color: BG_DARK, fontSize: 'clamp(14px, 1.1vw, 18px)', fontWeight: 700, borderRadius: '14px', textDecoration: 'none' }}><Download size={20} /> Download</a>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(12px, 1.5vw, 24px)' }}>
               {[{ icon: Mail, label: 'Email', value: 'ayushsinghsolanki06@gmail.com', href: 'mailto:ayushsinghsolanki06@gmail.com' }, { icon: Github, label: 'GitHub', value: 'github.com/Legend8068', href: 'https://github.com/Legend8068' }, { icon: Linkedin, label: 'LinkedIn', value: 'linkedin.com/in/ayush-singh0606', href: 'https://www.linkedin.com/in/ayush-singh0606' }].map(({ icon: Icon, label, value, href }, idx) => (
-                <a key={label} data-reveal href={href} target="_blank" rel="noopener noreferrer" style={{ ...revealCard(idx * 0.08), display: 'flex', alignItems: 'center', gap: 'clamp(14px, 1.5vw, 24px)', padding: 'clamp(18px, 2vw, 32px)', background: BG_CARD, borderRadius: '18px', border: `1px solid ${ACCENT}18`, textDecoration: 'none', backdropFilter: 'blur(8px)', ...hov }}>
+                <a key={label} data-reveal data-hover-link href={href} target="_blank" rel="noopener noreferrer" style={{ ...revealCard(idx * 0.08), display: 'flex', alignItems: 'center', gap: 'clamp(14px, 1.5vw, 24px)', padding: 'clamp(18px, 2vw, 32px)', background: BG_CARD, borderRadius: '18px', border: `1px solid ${ACCENT}18`, textDecoration: 'none', backdropFilter: 'blur(8px)' }}>
                   <div style={{ width: 'clamp(48px, 4vw, 64px)', height: 'clamp(48px, 4vw, 64px)', background: `${ACCENT}12`, borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Icon size={24} color={ACCENT} /></div>
                   <div>
                     <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 'clamp(11px, 0.9vw, 14px)', marginBottom: '4px', letterSpacing: '2px', textTransform: 'uppercase' }}>{label}</p>
@@ -563,7 +563,73 @@ export default function Ayush_portfolio() {
         @keyframes tickerScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
         @keyframes scrollIndicator { 0%, 100% { transform: translateX(-50%) translateY(0); opacity: 0.6; } 50% { transform: translateX(-50%) translateY(10px); opacity: 1; } }
         html { scroll-behavior: smooth; }
-        a:hover, button:hover { filter: brightness(1.1); }
+
+        /* ── Hover: Card Lift ── */
+        [data-hover-lift] {
+          transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94), border-color 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+        }
+        [data-hover-lift]:hover {
+          transform: translateY(-5px) !important;
+          box-shadow: 0 14px 40px rgba(240, 192, 64, 0.1), 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+          border-color: rgba(240, 192, 64, 0.3) !important;
+        }
+
+        /* ── Hover: Primary Button ── */
+        [data-hover-btn-primary] {
+          transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), filter 0.3s ease !important;
+        }
+        [data-hover-btn-primary]:hover {
+          transform: translateY(-2px) !important;
+          box-shadow: 0 8px 28px rgba(240, 192, 64, 0.35) !important;
+          filter: brightness(1.08) !important;
+        }
+        [data-arrow] {
+          transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        [data-hover-btn-primary]:hover [data-arrow] {
+          transform: translateX(5px);
+        }
+
+        /* ── Hover: Secondary Button ── */
+        [data-hover-btn-secondary] {
+          transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease !important;
+        }
+        [data-hover-btn-secondary]:hover {
+          transform: translateY(-2px) !important;
+          background: rgba(240, 192, 64, 0.08) !important;
+          border-color: rgba(240, 192, 64, 0.45) !important;
+          box-shadow: 0 6px 20px rgba(240, 192, 64, 0.12) !important;
+        }
+
+        /* ── Hover: Icon Links ── */
+        [data-hover-icon] {
+          transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), background 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease !important;
+        }
+        [data-hover-icon]:hover {
+          transform: translateY(-3px) scale(1.05) !important;
+          border-color: rgba(240, 192, 64, 0.4) !important;
+          color: #f0c040 !important;
+          box-shadow: 0 6px 20px rgba(240, 192, 64, 0.15) !important;
+        }
+
+        /* ── Hover: Contact Links ── */
+        [data-hover-link] {
+          transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), border-color 0.3s ease, background 0.3s ease, box-shadow 0.3s ease !important;
+        }
+        [data-hover-link]:hover {
+          transform: translateX(6px) !important;
+          border-color: rgba(240, 192, 64, 0.35) !important;
+          background: rgba(12, 26, 48, 0.98) !important;
+          box-shadow: 0 4px 20px rgba(240, 192, 64, 0.08) !important;
+        }
+
+        /* ── Nav button hover ── */
+        nav button {
+          transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+        }
+        nav button:hover {
+          transform: scale(1.12) !important;
+        }
       `}</style>
     </div>
   );
