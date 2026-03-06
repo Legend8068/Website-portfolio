@@ -340,7 +340,7 @@ export default function Ayush_portfolio() {
     { title: "Club Treasurer", company: "Tchoukball Club SUTD", period: "2024 — Present", desc: "Handling all finance planning as well as general planning for training and welfare purposes.", skills: ["Finance", "Planning", "Team Management"] }
   ];
   const projs = [
-    { title: "SG MeetHalfway", desc: "Web app that finds the optimal meeting spot between multiple people using geolocation and transit data", tech: ["React", "Mapbox", "Google Places API"], color: "#f0c040" },
+    { title: "SG MeetHalfway", desc: "Web app that finds the optimal meeting spot between multiple people using geolocation and transit data", tech: ["React", "Mapbox", "Google Places API"], color: "#f0c040", link: "https://sg-meet-halfway.vercel.app/" },
     { title: "Portfolio Website (In Progress)", desc: "Interactive personal portfolio featuring dynamic geometry networks, scroll-driven SVG portal transitions, and decrypted text effects.", tech: ["React", "Three.js", "JavaScript"], color: "#e07850" },
     { title: "Telegram Task Bot (In Progress)", desc: "Telegram bot to assist in task and deadline management for better convenience.", tech: ["Python", "Telegram API", "Automation"], color: "#50a0d0" }
   ];
@@ -506,10 +506,10 @@ export default function Ayush_portfolio() {
           <h2 style={{ fontSize: 'clamp(32px, 5vw, 80px)', fontWeight: 700, marginBottom: 'clamp(48px, 5vw, 80px)', lineHeight: 1.05 }}>Featured work.</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: 'clamp(20px, 2.5vw, 36px)' }}>
             {projs.map((p, i) => (
-              <div key={i} data-reveal style={{ ...revealCard(i * 0.12), padding: 'clamp(24px, 2.5vw, 40px)', background: BG_CARD, border: `1px solid ${p.color}30`, borderRadius: '20px', cursor: 'pointer', backdropFilter: 'blur(8px)', ...hov }}>
+              <div key={i} data-reveal onClick={() => p.link && window.open(p.link, '_blank')} style={{ ...revealCard(i * 0.12), padding: 'clamp(24px, 2.5vw, 40px)', background: BG_CARD, border: `1px solid ${p.color}30`, borderRadius: '20px', cursor: p.link ? 'pointer' : 'default', backdropFilter: 'blur(8px)', ...(p.link ? hov : {}) }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'clamp(18px, 1.8vw, 30px)' }}>
                   <Code size={40} color={p.color} />
-                  <ExternalLink size={22} color="rgba(255,255,255,0.3)" />
+                  <ExternalLink size={22} color={p.link ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.3)"} />
                 </div>
                 <h3 style={{ fontSize: 'clamp(18px, 1.6vw, 28px)', fontWeight: 700, marginBottom: 'clamp(10px, 1vw, 18px)' }}>{p.title}</h3>
                 <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 'clamp(14px, 1.15vw, 19px)', lineHeight: 1.6, marginBottom: 'clamp(18px, 1.8vw, 30px)' }}>{p.desc}</p>
@@ -533,7 +533,7 @@ export default function Ayush_portfolio() {
               <div style={{ width: 'clamp(72px, 6vw, 96px)', height: 'clamp(72px, 6vw, 96px)', background: `${ACCENT}10`, borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 'clamp(20px, 2vw, 32px)' }}><FileText size={36} color={ACCENT} /></div>
               <h3 style={{ fontSize: 'clamp(20px, 1.8vw, 30px)', fontWeight: 700, marginBottom: '10px' }}>My Resume</h3>
               <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 'clamp(14px, 1.1vw, 18px)', lineHeight: 1.7, marginBottom: 'clamp(24px, 2.5vw, 40px)' }}>Download my resume to learn more about my education, skills, and experiences.</p>
-              <a href="/resume.pdf" download style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', padding: 'clamp(12px, 1.1vw, 20px) clamp(24px, 2.2vw, 40px)', background: ACCENT, color: BG_DARK, fontSize: 'clamp(14px, 1.1vw, 18px)', fontWeight: 700, borderRadius: '14px', textDecoration: 'none', ...hov }}><Download size={20} /> Download</a>
+              <a href="/Ayush Singh resume.pdf" download style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', padding: 'clamp(12px, 1.1vw, 20px) clamp(24px, 2.2vw, 40px)', background: ACCENT, color: BG_DARK, fontSize: 'clamp(14px, 1.1vw, 18px)', fontWeight: 700, borderRadius: '14px', textDecoration: 'none', ...hov }}><Download size={20} /> Download</a>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(12px, 1.5vw, 24px)' }}>
               {[{ icon: Mail, label: 'Email', value: 'ayushsinghsolanki06@gmail.com', href: 'mailto:ayushsinghsolanki06@gmail.com' }, { icon: Github, label: 'GitHub', value: 'github.com/Legend8068', href: 'https://github.com/Legend8068' }, { icon: Linkedin, label: 'LinkedIn', value: 'linkedin.com/in/ayush-singh0606', href: 'https://www.linkedin.com/in/ayush-singh0606' }].map(({ icon: Icon, label, value, href }, idx) => (
