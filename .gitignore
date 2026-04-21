@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local reference and AI context
+.claude/
+claude.md
+Reference Website/
