@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <defs>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#D4AF37" />
+      <stop offset="50%" stop-color="#E8CC6A" />
+      <stop offset="100%" stop-color="#D4AF37" />
+    </linearGradient>
+  </defs>
+
+  <!-- A — Hardcoded to Deep Navy as requested -->
+  <path
+    d="M 120 320 L 200 80 L 280 320 M 148 240 L 252 240"
+    fill="none"
+    stroke="#0a1628"
+    stroke-width="16"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <!-- S — Gold -->
+  <path
+    d="M 260 115 C 240 85, 170 75, 155 110 C 138 150, 220 165, 235 200 C 255 240, 160 265, 155 290 C 148 325, 225 335, 250 305"
+    fill="none"
+    stroke="url(#goldGradient)"
+    stroke-width="16"
+    stroke-linecap="round"
+  />
+
+</svg>

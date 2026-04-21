@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Github, Linkedin, Mail, ArrowRight, Briefcase, Download, FileText, Code, Home, User, Folder, ExternalLink, ChevronDown } from 'lucide-react';
 import DecryptedText from './DecryptedText';
 import Noise from './Noise';
+import ASMonogramLogo from './ASMonogramLogo';
 
 export default function Ayush_portfolio() {
   const circuitCanvasRef = useRef(null);
@@ -15,7 +16,7 @@ export default function Ayush_portfolio() {
 
   const [activeSection, setActiveSection] = useState('home');
   const [heroWordIndex, setHeroWordIndex] = useState(0);
-  const heroWords = [['Software', 'Engineer'], ['Creative', 'Developer'], ['Problem', 'Solver'], ['Tech', 'Enthusiast']];
+  const heroWords = [['Software', 'Engineer'], ['Creative', 'Developer'], ['Solutions', 'Architect'], ['Tech', 'Enthusiast']];
 
   const ACCENT = '#f0c040';
   const BG_DARK = '#0a1628';
@@ -231,8 +232,8 @@ export default function Ayush_portfolio() {
     const timeoutId = setTimeout(() => {
       intervalId = setInterval(() => {
         setHeroWordIndex(prev => (prev + 1) % 4);
-      }, 4000);
-    }, 4500); // Wait for initial slower decryption to finish
+      }, 2000);
+    }, 2000); // Start cycling sooner to match the 2s interval
     return () => { clearTimeout(timeoutId); if (intervalId) clearInterval(intervalId); };
   }, []);
 
@@ -285,14 +286,15 @@ export default function Ayush_portfolio() {
       //    round 9999px guarantees a perfect capsule at ALL sizes
       const scene = wrapper.querySelector('[data-portal-scene]');
       if (scene) {
-        const t = Math.pow(raw, 3); // ease-in: slow start, fast finish
+        // Hold the pill shape steady until raw = 0.6, then expand smoothly
+        const t = raw < 0.6 ? 0 : Math.pow((raw - 0.6) / 0.4, 2.5);
         // Overshoot to -15% so the 9999px rounded corners extend beyond viewport
         const curInsetX = insetX - t * (insetX + 15);
         const curInsetY = insetY - t * (insetY + 15);
         // Apply capsule clip-path — at t=1 insets are -15%, pushing corners off-screen
         scene.style.clipPath = `inset(${curInsetY}% ${curInsetX}% round 9999px)`;
-        // Scene scales from 0.82 to 1.0 for depth effect
-        const sceneT = Math.pow(raw, 4);
+        // Scene scales from 0.82 to 1.0 for depth effect towards the end as we pass through
+        const sceneT = raw < 0.6 ? 0 : Math.pow((raw - 0.6) / 0.4, 3);
         const sceneScale = 0.82 + sceneT * 0.18;
         scene.style.transform = `scale(${sceneScale})`;
       }
@@ -300,13 +302,13 @@ export default function Ayush_portfolio() {
       // ── 2. "EXPLORE" text: slides down into pill, then fades
       const exploreEl = wrapper.querySelector('[data-explore-text]');
       if (exploreEl) {
-        if (raw < 0.2) {
-          const slideP = raw / 0.2;
+        if (raw < 0.4) {
+          const slideP = raw / 0.4;
           const yOff = -(1 - slideP) * 130;
           exploreEl.style.transform = `translateY(${yOff}%)`;
-          exploreEl.style.opacity = Math.min(1, slideP * 2.5);
-        } else if (raw < 0.45) {
-          const fadeP = (raw - 0.2) / 0.25;
+          exploreEl.style.opacity = Math.min(1, slideP * 3);
+        } else if (raw < 0.65) {
+          const fadeP = (raw - 0.4) / 0.25;
           exploreEl.style.transform = 'translateY(0%)';
           exploreEl.style.opacity = Math.max(0, 1 - fadeP);
         } else {
@@ -318,6 +320,19 @@ export default function Ayush_portfolio() {
       // ── 3. Inner content fades in once through the portal
       const inner = wrapper.querySelector('[data-zoom-content]');
       if (inner) inner.style.opacity = Math.max(0, Math.min(1, (raw - 0.8) / 0.15));
+
+      // ── 4. "Sucked-in" zooming effect on the outer grid
+      const gridSvg = wrapper.querySelector('[data-portal-svg]');
+      if (gridSvg) {
+        let zoomRaw = 0;
+        if (raw > 0.4) {
+          zoomRaw = (raw - 0.4) / 0.6; // Starts after EXPLORE drops in
+        }
+        const gridScale = 1 + Math.pow(zoomRaw, 2) * 5;
+        gridSvg.style.transformOrigin = 'center center';
+        gridSvg.style.transform = `scale(${gridScale})`;
+        gridSvg.style.opacity = Math.max(0, 1 - Math.pow(zoomRaw, 1.5) * 1.5);
+      }
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
@@ -335,20 +350,20 @@ export default function Ayush_portfolio() {
   }, []);
 
   // ── Data ───────────────────────────────────────────────────────────────────
-  const skills = ['JavaScript', 'React', 'Python', 'Node.js', 'Three.js', 'TypeScript', 'Git', 'Java', 'Algorithms', 'Data Structures', 'CSS', 'HTML'];
+  const skills = ['JavaScript', 'React', 'Python', 'Node.js', 'Three.js', 'TypeScript', 'Git', 'Java', 'Algorithms', 'Computer Structures', 'CSS', 'HTML'];
   const exps = [
     { title: "Computer Science & Design", company: "SUTD", period: "2024 — 2028", desc: "Undergraduate studying Computer Science & Design at Singapore University of Technology and Design.", skills: ["Python", "JavaScript", "React", "AI & ML"] },
-    { title: "Events & Welfare Director", company: "Student Government", period: "2025 — Present", desc: "Planning and executing welfare events for the community including treasure hunts and the SUTD Student Organisation Showcase.", skills: ["Leadership", "Event Planning", "Community"] },
+    { title: "Events & Welfare Director", company: "Student Government", period: "2025", desc: "Planning and executing welfare events for the community including treasure hunts and the SUTD Student Organisation Showcase.", skills: ["Leadership", "Event Planning", "Community"] },
     { title: "Biodiversity Conservation", company: "ACCB Cambodia", period: "2023", desc: "Worked with Angkor Centre for Conservation of Biodiversity in Siem Reap for the rehabilitation and conservation of endangered species.", skills: ["Conservation", "Fieldwork", "Teamwork"] },
     { title: "Club Treasurer", company: "Tchoukball Club SUTD", period: "2025 — Present", desc: "Handling all finance planning as well as general planning for training and welfare purposes.", skills: ["Finance", "Planning", "Team Management"] },
-    { title: "Crackerjack Convention", company: "SUTD", period: "2023", desc: "Participated in the Crackerjack Convention, a multi disciplinary event bringing together innovators, designers, and engineers to collaborate and tackle real world 21st century challenges with creative solutions.", skills: ["Innovation", "Design Thinking", "Collaboration"] },
-    { title: "What The Hack", company: "SUTD", period: "2024", desc: "Participated in this hackathon combining hardware and software, producing an automated medicine pill box dispenser.", skills: ["Hardware", "Software", "IoT"] },
+    { title: "Crackerjack Convention", company: "SUTD", period: "2023", desc: "Facilitated the Crackerjack Convention, a multi disciplinary event bringing together innovators, designers, and engineers to collaborate and tackle real world 21st century challenges with creative solutions.", skills: ["Innovation", "Design Thinking", "Collaboration"] },
+    { title: "What The Hack", company: "SUTD", period: "2024", desc: "Produced a solution combining hardware and software to solve a medical related issue, producing an automated medicine pill box dispenser.", skills: ["Hardware", "Software", "IoT"] },
     { title: "Maritime Hackathon", company: "NUS", period: "2025", desc: "Produced an analytics and dashboard solution for visualising different statistics for maritime companies.", skills: ["Data Analytics", "Dashboard", "Full-Stack"] },
     { title: "SIM UOL CSSC Hackathon", company: "SIM", period: "2024", desc: "Designed and built a 3 level maze running and combat game within the hackathon timeframe.", skills: ["Game Dev", "Problem Solving", "Teamwork"] },
-    { title: "CatalystX Startathon", company: "NTU", period: "2024", desc: "Won $200 Most Creative Idea prize for a biofuels startup concept aimed at making sustainable fuels more prevalent in daily life.", skills: ["Entrepreneurship", "Pitching", "Sustainability"] }
+    { title: "CatalystX Startathon", company: "NTU", period: "2024", desc: "Won $200 for the Most Creative Idea for a biofuels startup concept aimed at making sustainable fuels more prevalent in daily life.", skills: ["Entrepreneurship", "Pitching", "Sustainability"] }
   ];
   const projs = [
-    { title: "SG MeetHalfway", desc: "Web app that finds the optimal meeting spot between multiple people using geolocation and transit data", tech: ["React", "Mapbox", "Google Places API"], color: "#f0c040", link: "https://sg-meet-halfway.vercel.app/" },
+    { title: "SG MeetHalfway", desc: "Web app that finds the optimal meeting spot between multiple people using geolocation and transit data", tech: ["React", "Leaflet", "Google Places API"], color: "#f0c040", link: "https://sg-meet-halfway.vercel.app/" },
     { title: "Portfolio Website (In Progress)", desc: "Interactive personal portfolio featuring dynamic geometry networks, scroll driven SVG portal transitions, and decrypted text effects.", tech: ["React", "Three.js", "JavaScript"], color: "#e07850" },
     { title: "Telegram Task Bot (In Progress)", desc: "Telegram bot to assist in task and deadline management for better convenience.", tech: ["Python", "Telegram API", "Automation"], color: "#50a0d0" }
   ];
@@ -415,11 +430,6 @@ export default function Ayush_portfolio() {
           </div>
         </div>
 
-        {/* Scroll indicator */}
-        <div style={{ position: 'absolute', bottom: 'clamp(32px, 5vh, 80px)', left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', animation: 'scrollIndicator 2s ease-in-out infinite', cursor: 'pointer' }} onClick={() => scrollTo('about')}>
-          <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', letterSpacing: '3px', textTransform: 'uppercase' }}>Scroll</span>
-          <ChevronDown size={20} color="rgba(255,255,255,0.3)" />
-        </div>
       </section>
 
       {/* ═══════════════════ ABOUT ═══════════════════ */}
@@ -529,15 +539,12 @@ export default function Ayush_portfolio() {
           <h2 style={{ fontSize: 'clamp(36px, 5vw, 80px)', fontWeight: 700, marginBottom: 'clamp(16px, 1.5vw, 24px)', lineHeight: 1.05 }}>Let's Build Something<span style={{ color: ACCENT }}> Together.</span></h2>
           <p style={{ fontSize: 'clamp(16px, 1.3vw, 22px)', color: 'rgba(255,255,255,0.4)', lineHeight: 1.7, marginBottom: 'clamp(48px, 5vw, 80px)', maxWidth: '600px' }}>Whether you have a project idea, a question, or just want to connect — I'd love to hear from you.</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: 'clamp(20px, 2.5vw, 36px)', marginBottom: 'clamp(48px, 5vw, 80px)' }}>
-            <div data-reveal data-hover-lift style={{ ...revealCard(0), padding: 'clamp(28px, 3vw, 48px)', background: BG_CARD, border: `1px solid ${ACCENT}18`, borderRadius: '24px', backdropFilter: 'blur(8px)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-              <div style={{ width: 'clamp(72px, 6vw, 96px)', height: 'clamp(72px, 6vw, 96px)', background: `${ACCENT}10`, borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 'clamp(20px, 2vw, 32px)' }}><FileText size={36} color={ACCENT} /></div>
-              <h3 style={{ fontSize: 'clamp(20px, 1.8vw, 30px)', fontWeight: 700, marginBottom: '10px' }}>My Resume</h3>
-              <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 'clamp(14px, 1.1vw, 18px)', lineHeight: 1.7, marginBottom: 'clamp(24px, 2.5vw, 40px)' }}>Download my resume to learn more about my education, skills, and experiences.</p>
-              <a href="/Ayush Singh resume.pdf" download data-hover-btn-primary style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', padding: 'clamp(12px, 1.1vw, 20px) clamp(24px, 2.2vw, 40px)', background: ACCENT, color: BG_DARK, fontSize: 'clamp(14px, 1.1vw, 18px)', fontWeight: 700, borderRadius: '14px', textDecoration: 'none' }}><Download size={20} /> Download</a>
+            <div data-reveal data-hover-lift style={{ ...revealCard(0), padding: 'clamp(28px, 3vw, 48px)', background: BG_CARD, border: `1px solid ${ACCENT}18`, borderRadius: '24px', backdropFilter: 'blur(8px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              <ASMonogramLogo size="full" interactive={true} />
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(12px, 1.5vw, 24px)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(12px, 1.5vw, 24px)', height: '100%' }}>
               {[{ icon: Mail, label: 'Email', value: 'ayushsinghsolanki06@gmail.com', href: 'mailto:ayushsinghsolanki06@gmail.com' }, { icon: Github, label: 'GitHub', value: 'github.com/Legend8068', href: 'https://github.com/Legend8068' }, { icon: Linkedin, label: 'LinkedIn', value: 'linkedin.com/in/ayush-singh0606', href: 'https://www.linkedin.com/in/ayush-singh0606' }].map(({ icon: Icon, label, value, href }, idx) => (
-                <a key={label} data-reveal data-hover-link href={href} target="_blank" rel="noopener noreferrer" style={{ ...revealCard(idx * 0.08), display: 'flex', alignItems: 'center', gap: 'clamp(14px, 1.5vw, 24px)', padding: 'clamp(18px, 2vw, 32px)', background: BG_CARD, borderRadius: '18px', border: `1px solid ${ACCENT}18`, textDecoration: 'none', backdropFilter: 'blur(8px)' }}>
+                <a key={label} data-reveal data-hover-link href={href} target="_blank" rel="noopener noreferrer" style={{ ...revealCard(idx * 0.08), display: 'flex', alignItems: 'center', gap: 'clamp(14px, 1.5vw, 24px)', padding: 'clamp(18px, 2vw, 32px)', background: BG_CARD, borderRadius: '18px', border: `1px solid ${ACCENT}18`, textDecoration: 'none', backdropFilter: 'blur(8px)', flex: 1 }}>
                   <div style={{ width: 'clamp(48px, 4vw, 64px)', height: 'clamp(48px, 4vw, 64px)', background: `${ACCENT}12`, borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Icon size={24} color={ACCENT} /></div>
                   <div>
                     <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 'clamp(11px, 0.9vw, 14px)', marginBottom: '4px', letterSpacing: '2px', textTransform: 'uppercase' }}>{label}</p>
