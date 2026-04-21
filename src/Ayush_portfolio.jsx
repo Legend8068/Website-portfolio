@@ -536,7 +536,10 @@ export default function Ayush_portfolio() {
       <section id="contact" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', width: '100%', padding: 'clamp(80px, 10vh, 140px) clamp(24px, 5vw, 80px)', position: 'relative', zIndex: 1 }}>
         <div style={wrap}>
           <p style={{ color: ACCENT, fontSize: 'clamp(13px, 1.1vw, 18px)', letterSpacing: '5px', marginBottom: 'clamp(12px, 1.2vw, 20px)', fontWeight: 500 }}>// RESUME & CONTACT</p>
-          <h2 style={{ fontSize: 'clamp(36px, 5vw, 80px)', fontWeight: 700, marginBottom: 'clamp(16px, 1.5vw, 24px)', lineHeight: 1.05 }}>Let's Build Something<span style={{ color: ACCENT }}> Together.</span></h2>
+          <h2 style={{ fontSize: 'clamp(36px, 5vw, 80px)', fontWeight: 700, marginBottom: 'clamp(16px, 1.5vw, 24px)', lineHeight: 1.05 }}>
+            Let's Build Something<br />
+            <span style={{ color: ACCENT }}><DecryptedText key={`together-${Math.floor(heroWordIndex / 2)}`} text="Together." speed={70} maxIterations={15} animateOn="view" sequential revealDirection="start" parentStyle={{ display: 'inline-block', whiteSpace: 'nowrap' }} encryptedStyle={{ color: `${ACCENT}88` }} /></span>
+          </h2>
           <p style={{ fontSize: 'clamp(16px, 1.3vw, 22px)', color: 'rgba(255,255,255,0.4)', lineHeight: 1.7, marginBottom: 'clamp(48px, 5vw, 80px)', maxWidth: '600px' }}>Whether you have a project idea, a question, or just want to connect — I'd love to hear from you.</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: 'clamp(20px, 2.5vw, 36px)', marginBottom: 'clamp(48px, 5vw, 80px)' }}>
             <div data-reveal data-hover-lift style={{ ...revealCard(0), padding: 'clamp(28px, 3vw, 48px)', background: BG_CARD, border: `1px solid ${ACCENT}18`, borderRadius: '24px', backdropFilter: 'blur(8px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
