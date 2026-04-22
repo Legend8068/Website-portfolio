@@ -7,11 +7,14 @@
     </linearGradient>
   </defs>
 
-  <!-- A — Hardcoded to Deep Navy as requested -->
+  <!-- Background Circle for visibility in light mode tabs -->
+  <circle cx="200" cy="200" r="200" fill="#0a1628" />
+
+  <!-- A — White for visibility -->
   <path
     d="M 120 320 L 200 80 L 280 320 M 148 240 L 252 240"
     fill="none"
-    stroke="#0a1628"
+    stroke="#ffffff"
     stroke-width="16"
     stroke-linecap="round"
     stroke-linejoin="round"
