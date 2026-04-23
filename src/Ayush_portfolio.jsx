@@ -3,6 +3,7 @@ import { Github, Linkedin, Mail, ArrowRight, Briefcase, Download, FileText, Code
 import DecryptedText from './DecryptedText';
 import Noise from './Noise';
 import ASMonogramLogo from './ASMonogramLogo';
+import CubeTransition from './CubeTransition';
 
 export default function Ayush_portfolio() {
   const circuitCanvasRef = useRef(null);
@@ -489,25 +490,8 @@ export default function Ayush_portfolio() {
 
       </div>
 
-      {/* ═══════════════════ EXPERIENCE ═══════════════════ */}
-      <section id="experience" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', width: '100%', padding: 'clamp(80px, 10vh, 140px) clamp(24px, 5vw, 80px)', background: BG_DIMENSION }}>
-        <div style={wrap}>
-          <p style={{ color: ACCENT, fontSize: 'clamp(13px, 1.1vw, 18px)', letterSpacing: '5px', marginBottom: 'clamp(12px, 1.2vw, 20px)', fontWeight: 500 }}>// EXPERIENCE</p>
-          <h2 style={{ fontSize: 'clamp(32px, 5vw, 80px)', fontWeight: 700, marginBottom: 'clamp(48px, 5vw, 80px)', lineHeight: 1.05 }}>Professional journey.</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: 'clamp(20px, 2.5vw, 36px)' }}>
-            {exps.map((e, i) => (
-              <div key={i} data-reveal data-hover-lift style={{ ...revealCard(i * 0.12), padding: 'clamp(24px, 2.5vw, 40px)', background: BG_CARD, border: `1px solid ${ACCENT}18`, borderRadius: '20px', backdropFilter: 'blur(8px)', cursor: 'default' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '16px' }}>
-                  <h3 style={{ fontSize: 'clamp(18px, 1.6vw, 28px)', fontWeight: 700, marginBottom: '4px' }}>{e.title}</h3>
-                  <p style={{ color: ACCENT, fontSize: 'clamp(13px, 1.1vw, 18px)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0, marginBottom: '2px' }}><Briefcase size={16} /> {e.company}</p>
-                  <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 'clamp(12px, 0.9vw, 15px)', fontFamily: 'monospace', letterSpacing: '1px', whiteSpace: 'nowrap' }}>{e.period}</span>
-                </div>
-                <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 'clamp(14px, 1.15vw, 19px)', lineHeight: 1.7 }}>{e.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* ═══════════════════ CUBE → EXPERIENCE TRANSITION ═══════════════════ */}
+      <CubeTransition experiences={exps} />
 
       {/* ═══════════════════ PROJECTS ═══════════════════ */}
       <section id="projects" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', width: '100%', padding: 'clamp(80px, 10vh, 140px) clamp(24px, 5vw, 80px)', background: BG_DIMENSION }}>
