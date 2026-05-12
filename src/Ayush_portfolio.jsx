@@ -1,23 +1,48 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Github, Linkedin, Mail, ArrowRight, Briefcase, Download, FileText, Code, Home, User, Folder, ExternalLink, ChevronDown } from 'lucide-react';
+import { Github, Linkedin, Mail, ArrowRight, Briefcase, Download, FileText, Code, Home, User, Folder, ExternalLink, ChevronDown, Gamepad2 } from 'lucide-react';
 import DecryptedText from './DecryptedText';
-import Noise from './Noise';
 import ASMonogramLogo from './ASMonogramLogo';
 import CubeTransition from './CubeTransition';
+import AudioWaveDivider from './AudioWaveDivider';
+import MusicPictogram from './MusicPictogram';
+import MusicLogo from './MusicLogo';
+import PlayingCards from './PlayingCards';
+import HobbiesScrollSequence from './HobbiesScrollSequence';
 
-export default function Ayush_portfolio() {
+export default function Ayush_portfolio({ loaderDone = true }) {
   const circuitCanvasRef = useRef(null);
   const mousePos = useRef({ x: -1000, y: -1000 });
   const zoomWrapperRef = useRef(null);
   const zoomFrameRef = useRef(null);
-  const heroSvgRef = useRef(null);
   const heroRef = useRef(null);
   const circuitOpacityRef = useRef(0);
   const maskDataRef = useRef(null);
 
   const [activeSection, setActiveSection] = useState('home');
   const [heroWordIndex, setHeroWordIndex] = useState(0);
+  // introStage: 'pre' (loader still showing) | 'centered' (name big, scrambling)
+  //             | 'final' (name at top, rest of hero revealed)
+  const [introStage, setIntroStage] = useState('pre');
   const heroWords = [['Software', 'Engineer'], ['Creative', 'Developer'], ['Solutions', 'Architect'], ['Tech', 'Enthusiast']];
+
+  const [currentTime, setCurrentTime] = useState(() => {
+    return new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Singapore', hour: 'numeric', minute: '2-digit', hour12: true });
+  });
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Singapore', hour: 'numeric', minute: '2-digit', hour12: true }));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Kick off the name intro the moment the loader finishes.
+  useEffect(() => {
+    if (!loaderDone) return;
+    setIntroStage('centered');
+    const t = setTimeout(() => setIntroStage('final'), 1500);
+    return () => clearTimeout(t);
+  }, [loaderDone]);
 
   const ACCENT = '#f0c040';
   const BG_DARK = '#0a1628';
@@ -29,7 +54,10 @@ export default function Ayush_portfolio() {
     if (!circuitCanvasRef.current) return;
     const canvas = circuitCanvasRef.current;
     const ctx = canvas.getContext('2d');
-    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+    const resize = () => { 
+      canvas.width = window.innerWidth; 
+      canvas.height = window.innerHeight - parseInt(getComputedStyle(canvas).top || '0', 10); 
+    };
     resize();
     const gridSize = 80;
     const nodes = [], connections = [], signals = [], cursorSignals = [];
@@ -109,14 +137,8 @@ export default function Ayush_portfolio() {
         if (glow > 0.15) { const g = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, size * 3); g.addColorStop(0, `rgba(240, 192, 64, ${glow * 0.25})`); g.addColorStop(1, 'rgba(240, 192, 64, 0)'); ctx.beginPath(); ctx.arc(node.x, node.y, size * 3, 0, Math.PI * 2); ctx.fillStyle = g; ctx.fill(); }
         ctx.beginPath(); ctx.arc(node.x, node.y, size, 0, Math.PI * 2); ctx.fillStyle = `rgba(240, 192, 64, ${alpha})`; ctx.fill();
       });
-      // Fade circuit canvas based on scroll — hidden during hero
-      const scrollY = window.scrollY;
-      const heroH = window.innerHeight;
-      const fadeStart = heroH * 0.5;
-      const fadeEnd = heroH * 1.2;
-      const targetOpacity = scrollY < fadeStart ? 0 : Math.min(0.5, ((scrollY - fadeStart) / (fadeEnd - fadeStart)) * 0.5);
-      circuitOpacityRef.current += (targetOpacity - circuitOpacityRef.current) * 0.1;
-      canvas.style.opacity = circuitOpacityRef.current;
+      // Render the nodes without scroll-fading since it's now the hero background
+      canvas.style.opacity = '0.5';
       frameId = requestAnimationFrame(draw);
     };
     frameId = requestAnimationFrame(draw);
@@ -124,100 +146,10 @@ export default function Ayush_portfolio() {
     return () => { cancelAnimationFrame(frameId); window.removeEventListener('resize', resize); window.removeEventListener('mousemove', handleMouseMove); };
   }, []);
 
-  // ── Hero Wave Lines (cursor-reactive SVG) ─────────────────────────────────
-  useEffect(() => {
-    const svg = heroSvgRef.current;
-    const hero = heroRef.current;
-    if (!svg || !hero) return;
-    const noise = new Noise(Math.random());
-    let lines = [], paths = [];
-    const mouse = { x: -10, y: 0, lx: 0, ly: 0, sx: 0, sy: 0, v: 0, vs: 0, a: 0, set: false };
-    let bounding = { left: 0, top: 0, width: 0, height: 0 };
-    let animId;
-
-    const setSize = () => {
-      const rect = hero.getBoundingClientRect();
-      bounding = { left: rect.left, top: rect.top + window.scrollY, width: hero.clientWidth, height: hero.clientHeight };
-      svg.style.width = bounding.width + 'px';
-      svg.style.height = bounding.height + 'px';
-    };
-    const setLines = () => {
-      lines = []; paths.forEach(p => p.remove()); paths = [];
-      const xGap = 12, yGap = 36;
-      const oW = bounding.width + 200, oH = bounding.height + 40;
-      const totalLines = Math.ceil(oW / xGap), totalPoints = Math.ceil(oH / yGap);
-      const xStart = (bounding.width - xGap * totalLines) / 2, yStart = (bounding.height - yGap * totalPoints) / 2;
-      for (let i = 0; i <= totalLines; i++) {
-        const pts = [];
-        for (let j = 0; j <= totalPoints; j++) pts.push({ x: xStart + xGap * i, y: yStart + yGap * j, wave: { x: 0, y: 0 }, cursor: { x: 0, y: 0, vx: 0, vy: 0 } });
-        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        path.setAttribute('fill', 'none');
-        path.setAttribute('stroke', 'rgba(240, 192, 64, 0.12)');
-        path.setAttribute('stroke-width', '1');
-        svg.appendChild(path);
-        paths.push(path);
-        lines.push(pts);
-      }
-    };
-    const onMouseMove = (e) => {
-      mouse.x = e.clientX - bounding.left;
-      mouse.y = e.clientY - bounding.top + window.scrollY;
-      if (!mouse.set) { mouse.sx = mouse.x; mouse.sy = mouse.y; mouse.lx = mouse.x; mouse.ly = mouse.y; mouse.set = true; }
-    };
-    const onTouchMove = (e) => {
-      const t = e.touches[0];
-      mouse.x = t.clientX - bounding.left;
-      mouse.y = t.clientY - bounding.top + window.scrollY;
-      if (!mouse.set) { mouse.sx = mouse.x; mouse.sy = mouse.y; mouse.lx = mouse.x; mouse.ly = mouse.y; mouse.set = true; }
-    };
-    const tick = (time) => {
-      mouse.sx += (mouse.x - mouse.sx) * 0.1;
-      mouse.sy += (mouse.y - mouse.sy) * 0.1;
-      const dx = mouse.x - mouse.lx, dy = mouse.y - mouse.ly;
-      mouse.v = Math.hypot(dx, dy);
-      mouse.vs += (mouse.v - mouse.vs) * 0.1;
-      mouse.vs = Math.min(100, mouse.vs);
-      mouse.lx = mouse.x; mouse.ly = mouse.y;
-      mouse.a = Math.atan2(dy, dx);
-      // Move points
-      lines.forEach(pts => pts.forEach(p => {
-        const move = noise.perlin2((p.x + time * 0.0125) * 0.002, (p.y + time * 0.005) * 0.0015) * 12;
-        p.wave.x = Math.cos(move) * 32;
-        p.wave.y = Math.sin(move) * 16;
-        const ddx = p.x - mouse.sx, ddy = p.y - mouse.sy, d = Math.hypot(ddx, ddy), l = Math.max(175, mouse.vs);
-        if (d < l) { const s = 1 - d / l, f = Math.cos(d * 0.001) * s; p.cursor.vx += Math.cos(mouse.a) * f * l * mouse.vs * 0.00065; p.cursor.vy += Math.sin(mouse.a) * f * l * mouse.vs * 0.00065; }
-        p.cursor.vx += (0 - p.cursor.x) * 0.005; p.cursor.vy += (0 - p.cursor.y) * 0.005;
-        p.cursor.vx *= 0.925; p.cursor.vy *= 0.925;
-        p.cursor.x += p.cursor.vx * 2; p.cursor.y += p.cursor.vy * 2;
-        p.cursor.x = Math.min(100, Math.max(-100, p.cursor.x));
-        p.cursor.y = Math.min(100, Math.max(-100, p.cursor.y));
-      }));
-      // Draw
-      lines.forEach((pts, li) => {
-        let d = `M ${Math.round((pts[0].x + pts[0].wave.x) * 10) / 10} ${Math.round((pts[0].y + pts[0].wave.y) * 10) / 10}`;
-        pts.forEach((p, pi) => {
-          const isLast = pi === pts.length - 1;
-          const mx = p.x + p.wave.x + (isLast ? 0 : p.cursor.x);
-          const my = p.y + p.wave.y + (isLast ? 0 : p.cursor.y);
-          d += ` L ${Math.round(mx * 10) / 10} ${Math.round(my * 10) / 10}`;
-        });
-        paths[li].setAttribute('d', d);
-      });
-      animId = requestAnimationFrame(tick);
-    };
-    setSize(); setLines();
-    window.addEventListener('mousemove', onMouseMove);
-    hero.addEventListener('touchmove', onTouchMove);
-    animId = requestAnimationFrame(tick);
-    const onResize = () => { setSize(); setLines(); };
-    window.addEventListener('resize', onResize);
-    return () => { cancelAnimationFrame(animId); window.removeEventListener('mousemove', onMouseMove); hero.removeEventListener('touchmove', onTouchMove); window.removeEventListener('resize', onResize); };
-  }, []);
-
   // ── Scroll Tracking ───────────────────────────────────────────────────────
   useEffect(() => {
     const handleScroll = () => {
-      const ids = ['home', 'about', 'experience', 'projects', 'contact'];
+      const ids = ['home', 'about', 'hobbies', 'experience', 'projects', 'contact'];
       for (let i = ids.length - 1; i >= 0; i--) {
         const el = document.getElementById(ids[i]);
         if (el && el.getBoundingClientRect().top <= 300) { setActiveSection(ids[i]); break; }
@@ -377,57 +309,206 @@ export default function Ayush_portfolio() {
   // Portal "Explore" text — no ghost letters needed
 
   return (
-    <div style={{ width: '100%', minHeight: '100vh', background: BG_DARK, fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", color: '#fff', overflowX: 'hidden', fontSize: '16px', lineHeight: 1.6 }}>
-      <canvas ref={circuitCanvasRef} style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0, opacity: 0 }} />
-
+    <div style={{ width: '100%', minHeight: '100vh', background: BG_DARK, fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif", color: '#fff', fontSize: '16px', lineHeight: 1.6 }}>
       {/* Bottom Navigation */}
       <nav style={{ position: 'fixed', bottom: 'clamp(16px, 2.5vw, 32px)', left: '50%', transform: 'translateX(-50%)', zIndex: 60, display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', background: 'rgba(12,26,48,0.95)', backdropFilter: 'blur(16px)', borderRadius: '50px', border: `1px solid ${ACCENT}18` }}>
-        {[{ id: 'home', Icon: Home }, { id: 'about', Icon: User }, { id: 'experience', Icon: Briefcase }, { id: 'projects', Icon: Folder }, { id: 'contact', Icon: Mail }].map(({ id, Icon }) => (
+        {[{ id: 'home', Icon: Home }, { id: 'about', Icon: User }, { id: 'hobbies', Icon: Gamepad2 }, { id: 'experience', Icon: Briefcase }, { id: 'projects', Icon: Folder }, { id: 'contact', Icon: Mail }].map(({ id, Icon }) => (
           <button key={id} onClick={() => scrollTo(id)} style={{ width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: activeSection === id ? ACCENT : 'transparent', border: 'none', borderRadius: '50%', color: activeSection === id ? BG_DARK : 'rgba(255,255,255,0.45)', cursor: 'pointer', ...hov }}><Icon size={20} /></button>
         ))}
       </nav>
 
       {/* Side Dots */}
       <div style={{ position: 'fixed', right: 'clamp(12px, 1.5vw, 32px)', top: '50%', transform: 'translateY(-50%)', zIndex: 60, display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        {['home', 'about', 'experience', 'projects', 'contact'].map(id => (
+        {['home', 'about', 'hobbies', 'experience', 'projects', 'contact'].map(id => (
           <button key={id} onClick={() => scrollTo(id)} style={{ width: activeSection === id ? '14px' : '10px', height: activeSection === id ? '14px' : '10px', borderRadius: '50%', background: activeSection === id ? ACCENT : 'rgba(255,255,255,0.25)', border: 'none', cursor: 'pointer', ...hov, boxShadow: activeSection === id ? `0 0 12px ${ACCENT}` : 'none' }} />
         ))}
       </div>
 
-      {/* ═══════════════════ HERO with WAVE LINES ═══════════════════ */}
-      <section id="home" ref={heroRef} style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', width: '100%', position: 'relative', zIndex: 1, overflow: 'hidden' }}>
-        {/* SVG Wave Lines */}
-        <svg ref={heroSvgRef} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0, pointerEvents: 'none' }} />
+      {/* ═══════════════════ HERO & ABOUT WRAPPER ═══════════════════ */}
+      <div style={{ position: 'relative', width: '100%' }}>
 
-        {/* Hero Content - Centered like reference */}
-        <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', padding: '0 clamp(24px, 5vw, 80px)', width: '100%', maxWidth: '1400px' }}>
-          <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 'clamp(11px, 0.9vw, 14px)', letterSpacing: '6px', fontFamily: 'monospace', marginBottom: 'clamp(20px, 2vw, 40px)', textTransform: 'uppercase' }}>Ayush Singh &middot; Portfolio</p>
+        {/* Nodes Background (Spans both Home and About, starts below topbar) */}
+        <canvas 
+          ref={circuitCanvasRef} 
+          style={{ 
+            position: 'absolute', 
+            top: 'clamp(90px, 11vh, 130px)', 
+            left: 0, 
+            width: '100%', 
+            height: 'calc(100% - clamp(90px, 11vh, 130px))', 
+            zIndex: 0, 
+            opacity: 0.5 
+          }} 
+        />
 
-          <h1 style={{ fontSize: 'clamp(48px, 10vw, 180px)', fontWeight: 700, lineHeight: 0.9, margin: '0 0 clamp(28px, 3vw, 48px) 0', letterSpacing: '-0.03em', textTransform: 'uppercase' }}>
-            <DecryptedText text="Aspiring" speed={55} maxIterations={20} animateOn="view" sequential revealDirection="start" parentStyle={{ display: 'block' }} />
-            <span style={{ color: ACCENT }}>
-              <DecryptedText key={`hw-${heroWordIndex}-0`} text={heroWords[heroWordIndex][0]} speed={heroWordIndex === 0 ? 65 : 40} maxIterations={heroWordIndex === 0 ? 28 : 16} animateOn="view" sequential revealDirection="start" parentStyle={{ display: 'block' }} encryptedStyle={{ color: `${ACCENT}88` }} />
-            </span>
-            <span style={{ color: ACCENT }}>
-              <DecryptedText key={`hw-${heroWordIndex}-1`} text={heroWords[heroWordIndex][1]} speed={heroWordIndex === 0 ? 60 : 38} maxIterations={heroWordIndex === 0 ? 25 : 14} animateOn="view" sequential revealDirection="start" parentStyle={{ display: 'block' }} encryptedStyle={{ color: `${ACCENT}88` }} />
-            </span>
-          </h1>
+        {/* ═══════════════════ HERO ═══════════════════ */}
+        <section id="home" ref={heroRef} style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', width: '100%', position: 'relative', zIndex: 1, overflow: 'hidden' }}>
 
-          <p style={{ fontSize: 'clamp(14px, 1.2vw, 20px)', color: 'rgba(255,255,255,0.35)', lineHeight: 1.7, marginBottom: 'clamp(32px, 4vw, 56px)', maxWidth: '560px', margin: '0 auto clamp(32px, 4vw, 56px)' }}>
-            Learning and Exploring new things everyday
-          </p>
+        <style>{`
+          .toolbar-coords { display: none; }
+          @media (min-width: 768px) { .toolbar-coords { display: block; } }
+          .toolbar-icon { color: rgba(255,255,255,0.6); transition: color 0.3s; display: flex; align-items: center; justify-content: center; }
+          .toolbar-icon:hover { color: ${ACCENT}; }
+        `}</style>
 
-          <div style={{ display: 'flex', gap: 'clamp(12px, 1.2vw, 20px)', flexWrap: 'wrap', justifyContent: 'center', marginBottom: 'clamp(48px, 6vw, 80px)' }}>
-            <button data-hover-btn-primary onClick={() => scrollTo('projects')} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: 'clamp(14px, 1.2vw, 22px) clamp(28px, 2.4vw, 44px)', background: ACCENT, color: BG_DARK, fontSize: 'clamp(15px, 1.2vw, 20px)', fontWeight: 700, border: 'none', borderRadius: '12px', cursor: 'pointer' }}>
-              View Projects <span data-arrow style={{ display: 'inline-flex' }}><ArrowRight size={20} /></span>
-            </button>
-            <button data-hover-btn-secondary onClick={() => scrollTo('contact')} style={{ padding: 'clamp(14px, 1.2vw, 22px) clamp(28px, 2.4vw, 44px)', background: 'transparent', color: '#fff', fontSize: 'clamp(15px, 1.2vw, 20px)', fontWeight: 500, border: '1.5px solid rgba(255,255,255,0.25)', borderRadius: '12px', cursor: 'pointer' }}>Contact Me</button>
+        {/* Top Toolbar (Landing Section Only) */}
+        <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', padding: 'clamp(20px, 3vw, 40px)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', zIndex: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(16px, 2.5vw, 32px)', color: 'rgba(255,255,255,0.6)', fontSize: '11px', letterSpacing: '2px', fontFamily: 'monospace', textTransform: 'uppercase', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: ACCENT }}></span>
+              SINGAPORE, SG
+            </div>
+            <div>{currentTime} GMT+8</div>
+            <div className="toolbar-coords">1° 20′ 23.22″ N, 03° 57′ 51.65″ E</div>
+          </div>
+          <div style={{ display: 'flex', gap: '16px' }}>
+            {[{ Icon: Github, href: 'https://github.com/Legend8068' }, { Icon: Linkedin, href: 'https://www.linkedin.com/in/ayush-singh0606' }, { Icon: Mail, href: 'mailto:ayushsinghsolanki06@gmail.com' }].map(({ Icon, href }, i) => (
+              <a key={i} href={href} target="_blank" rel="noopener noreferrer" className="toolbar-icon">
+                <Icon size={18} />
+              </a>
+            ))}
+          </div>
+        </div>
+
+        {/* Hero Content - Centered */}
+        {/* paddingTop reserves space for the fixed toolbar so content never slides under it */}
+        <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', padding: 'clamp(90px, 11vh, 130px) clamp(24px, 5vw, 80px) 0', width: '100%', maxWidth: '1400px' }}>
+          {/* Soft radial glow for text readability - constrained tightly around text */}
+          <div style={{ position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%, -50%)', width: '80%', height: '80%', background: `radial-gradient(ellipse at center, ${BG_DARK} 10%, rgba(10,22,40,0.85) 25%, transparent 60%)`, zIndex: -1, pointerEvents: 'none' }} />
+
+          {/* Name row: starts as one big centered "AYUSH SINGH"; in the
+              final stage it splits — AYUSH slides to the left, SINGH to
+              the right — and the audio-wave track expands into the gap
+              between them. The whole row also lifts slightly so the
+              block below can breathe and grow bigger type. */}
+          <div
+            data-hero-name
+            style={{
+              transform: introStage === 'centered'
+                ? 'translateY(18vh) scale(1.75)'
+                : 'translateY(0) scale(1)',
+              opacity: introStage === 'pre' ? 0 : 1,
+              transformOrigin: 'center center',
+              transition: 'transform 1000ms cubic-bezier(0.76, 0, 0.24, 1), opacity 400ms ease-out',
+              willChange: 'transform, opacity',
+              marginBottom: 'clamp(16px, 2.5vw, 40px)',
+            }}
+          >
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: introStage === 'final'
+                ? 'clamp(12px, 2.2vw, 36px)'
+                : 'clamp(8px, 0.8vw, 16px)',
+              transition: 'gap 1000ms cubic-bezier(0.76, 0, 0.24, 1)',
+              width: '100%',
+            }}>
+              {/* AYUSH — anchors to the left when the row opens */}
+              <h1 style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: 'clamp(44px, 8vw, 128px)',
+                fontWeight: 400,
+                lineHeight: 0.95,
+                letterSpacing: '-0.01em',
+                textTransform: 'uppercase',
+                color: '#3DA5D9',
+                margin: 0,
+                flexShrink: 0,
+              }}>
+                {introStage !== 'pre' && (
+                  <DecryptedText
+                    key={`hero-first-${introStage === 'centered' ? 'c' : 'f'}`}
+                    text="Ayush"
+                    speed={55}
+                    maxIterations={18}
+                    sequential
+                    revealDirection="start"
+                    animateOn="view"
+                    useOriginalCharsOnly={false}
+                    parentStyle={{ display: 'inline-block', whiteSpace: 'nowrap' }}
+                    encryptedStyle={{ color: '#3DA5D988' }}
+                  />
+                )}
+              </h1>
+
+              {/* Audio-wave track — collapsed to 0 width in the centered
+                  stage, expands into the gap between the names in final. */}
+              <div style={{
+                flex: introStage === 'final' ? '1 1 auto' : '0 0 auto',
+                width: introStage === 'final' ? 'clamp(120px, 20vw, 320px)' : 0,
+                maxWidth: introStage === 'final' ? 'clamp(120px, 20vw, 320px)' : 0,
+                opacity: introStage === 'final' ? 1 : 0,
+                overflow: 'hidden',
+                transition:
+                  'width 1000ms cubic-bezier(0.76, 0, 0.24, 1),' +
+                  'max-width 1000ms cubic-bezier(0.76, 0, 0.24, 1),' +
+                  'opacity 500ms ease-out 500ms',
+                pointerEvents: 'none',
+              }}>
+                <AudioWaveDivider />
+              </div>
+
+              {/* SINGH — anchors to the right when the row opens */}
+              <h1 style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: 'clamp(44px, 8vw, 128px)',
+                fontWeight: 400,
+                lineHeight: 0.95,
+                letterSpacing: '-0.01em',
+                textTransform: 'uppercase',
+                color: '#3DA5D9',
+                margin: 0,
+                flexShrink: 0,
+              }}>
+                {introStage !== 'pre' && (
+                  <DecryptedText
+                    key={`hero-last-${introStage === 'centered' ? 'c' : 'f'}`}
+                    text="Singh"
+                    speed={55}
+                    maxIterations={18}
+                    sequential
+                    revealDirection="start"
+                    animateOn="view"
+                    useOriginalCharsOnly={false}
+                    parentStyle={{ display: 'inline-block', whiteSpace: 'nowrap' }}
+                    encryptedStyle={{ color: '#3DA5D988' }}
+                  />
+                )}
+              </h1>
+            </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '14px', justifyContent: 'center' }}>
-            {[{ Icon: Github, href: 'https://github.com/Legend8068' }, { Icon: Linkedin, href: 'https://www.linkedin.com/in/ayush-singh0606' }, { Icon: Mail, href: 'mailto:ayushsinghsolanki06@gmail.com' }].map(({ Icon, href }, i) => (
-              <a key={i} href={href} target="_blank" rel="noopener noreferrer" data-hover-icon style={{ width: '48px', height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: BG_CARD, border: `1px solid ${ACCENT}20`, borderRadius: '12px', color: 'rgba(255,255,255,0.5)', textDecoration: 'none' }}><Icon size={20} /></a>
-            ))}
+          {/* Everything below fades in after the name has split apart.
+              With the audio track now up in the name row and the whole
+              block lifted a little, this section gets more vertical
+              breathing room — so type scales a step larger. */}
+          <div style={{
+            opacity: introStage === 'final' ? 1 : 0,
+            transform: introStage === 'final' ? 'translateY(0)' : 'translateY(16px)',
+            transition: 'opacity 700ms ease-out 350ms, transform 700ms cubic-bezier(0.25,0.46,0.45,0.94) 350ms',
+            pointerEvents: introStage === 'final' ? 'auto' : 'none',
+          }}>
+            <h2 style={{ fontSize: 'clamp(34px, 6.5vw, 112px)', fontWeight: 700, lineHeight: 0.95, margin: '0 0 clamp(20px, 2.4vw, 40px) 0', letterSpacing: '-0.03em', textTransform: 'uppercase' }}>
+              <DecryptedText text="Aspiring" speed={55} maxIterations={20} animateOn="view" sequential revealDirection="start" parentStyle={{ display: 'block' }} />
+              <span style={{ color: ACCENT }}>
+                <DecryptedText key={`hw-${heroWordIndex}-0`} text={heroWords[heroWordIndex][0]} speed={heroWordIndex === 0 ? 65 : 40} maxIterations={heroWordIndex === 0 ? 28 : 16} animateOn="view" sequential revealDirection="start" parentStyle={{ display: 'block' }} encryptedStyle={{ color: `${ACCENT}88` }} />
+              </span>
+              <span style={{ color: ACCENT }}>
+                <DecryptedText key={`hw-${heroWordIndex}-1`} text={heroWords[heroWordIndex][1]} speed={heroWordIndex === 0 ? 60 : 38} maxIterations={heroWordIndex === 0 ? 25 : 14} animateOn="view" sequential revealDirection="start" parentStyle={{ display: 'block' }} encryptedStyle={{ color: `${ACCENT}88` }} />
+              </span>
+            </h2>
+
+            <p style={{ fontSize: 'clamp(16px, 1.5vw, 26px)', color: 'rgba(255,255,255,0.4)', lineHeight: 1.65, marginBottom: 'clamp(24px, 3vw, 44px)', maxWidth: '640px', margin: '0 auto clamp(24px, 3vw, 44px)' }}>
+              Learning and Exploring new things everyday
+            </p>
+
+            <div style={{ display: 'flex', gap: 'clamp(14px, 1.4vw, 24px)', flexWrap: 'wrap', justifyContent: 'center', marginBottom: 'clamp(48px, 6vw, 80px)' }}>
+              <button data-hover-btn-primary onClick={() => scrollTo('projects')} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: 'clamp(16px, 1.4vw, 26px) clamp(32px, 2.8vw, 52px)', background: ACCENT, color: BG_DARK, fontSize: 'clamp(16px, 1.4vw, 22px)', fontWeight: 700, border: 'none', borderRadius: '14px', cursor: 'pointer' }}>
+                View Projects <span data-arrow style={{ display: 'inline-flex' }}><ArrowRight size={22} /></span>
+              </button>
+              <button data-hover-btn-secondary onClick={() => scrollTo('contact')} style={{ padding: 'clamp(16px, 1.4vw, 26px) clamp(32px, 2.8vw, 52px)', background: 'transparent', color: '#fff', fontSize: 'clamp(16px, 1.4vw, 22px)', fontWeight: 500, border: '1.5px solid rgba(255,255,255,0.25)', borderRadius: '14px', cursor: 'pointer' }}>Contact Me</button>
+            </div>
           </div>
         </div>
 
@@ -435,24 +516,32 @@ export default function Ayush_portfolio() {
 
       {/* ═══════════════════ ABOUT ═══════════════════ */}
       <section id="about" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', width: '100%', padding: 'clamp(80px, 10vh, 140px) clamp(24px, 5vw, 80px)', position: 'relative', zIndex: 1 }}>
-        <div style={{ ...wrap, textAlign: 'center', maxWidth: '800px' }}>
+        <div style={{ ...wrap, textAlign: 'center', maxWidth: '800px', position: 'relative', zIndex: 2 }}>
           <p style={{ color: ACCENT, fontSize: 'clamp(13px, 1.1vw, 18px)', letterSpacing: '5px', marginBottom: 'clamp(16px, 1.5vw, 24px)', fontWeight: 500 }}>// ABOUT ME</p>
           <h2 style={{ fontSize: 'clamp(36px, 5vw, 80px)', fontWeight: 700, marginBottom: 'clamp(48px, 5vw, 80px)', lineHeight: 1.05 }}>Passionate about code.</h2>
           <p style={{ fontSize: 'clamp(16px, 1.3vw, 22px)', color: 'rgba(255,255,255,0.55)', lineHeight: 1.8, marginBottom: 'clamp(20px, 2vw, 32px)' }}>I'm Ayush Singh, a Computer Science & Design undergraduate at the Singapore University of Technology and Design. I'm passionate about building elegant solutions to complex problems and regularly participate in hackathons to push my skills further.</p>
-          <p style={{ fontSize: 'clamp(16px, 1.3vw, 22px)', color: 'rgba(255,255,255,0.55)', lineHeight: 1.8 }}>When I'm not coding, you'll find me at hackathons, exploring new technologies, or working on creative side projects that blend design and engineering.</p>
+          <p style={{ fontSize: 'clamp(16px, 1.3vw, 22px)', color: 'rgba(255,255,255,0.55)', lineHeight: 1.8 }}>When I'm not developing, you'll find me at hackathons, exploring new technologies, or working on creative side projects that blend design and engineering.</p>
+        </div>
+
+        {/* ═══════════════════ TECH TICKER ═══════════════════ */}
+        <div style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', overflow: 'hidden', padding: 'clamp(20px, 2.5vw, 36px) 0', borderTop: `1px solid ${ACCENT}12`, zIndex: 2 }}>
+          <div style={{ display: 'flex', width: 'max-content', animation: 'tickerScroll 35s linear infinite' }}>
+            {[...skills, ...skills, ...skills, ...skills].map((s, i) => (
+              <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '14px', padding: '0 clamp(20px, 2.5vw, 40px)', whiteSpace: 'nowrap', fontSize: 'clamp(13px, 1.1vw, 18px)', color: 'rgba(255,255,255,0.35)', letterSpacing: '3px', fontWeight: 500 }}>
+                <span style={{ color: ACCENT, fontSize: '8px' }}>&#9670;</span>{s.toUpperCase()}
+              </span>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ═══════════════════ TECH TICKER ═══════════════════ */}
-      <div style={{ overflow: 'hidden', padding: 'clamp(20px, 2.5vw, 36px) 0', borderTop: `1px solid ${ACCENT}12`, borderBottom: `1px solid ${ACCENT}12`, position: 'relative', zIndex: 1 }}>
-        <div style={{ display: 'flex', width: 'max-content', animation: 'tickerScroll 35s linear infinite' }}>
-          {[...skills, ...skills, ...skills, ...skills].map((s, i) => (
-            <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: '14px', padding: '0 clamp(20px, 2.5vw, 40px)', whiteSpace: 'nowrap', fontSize: 'clamp(13px, 1.1vw, 18px)', color: 'rgba(255,255,255,0.35)', letterSpacing: '3px', fontWeight: 500 }}>
-              <span style={{ color: ACCENT, fontSize: '8px' }}>&#9670;</span>{s.toUpperCase()}
-            </span>
-          ))}
-        </div>
       </div>
+
+      {/* ═══════════════════ HOBBIES & INTERESTS ═══════════════════ */}
+      <HobbiesScrollSequence />
+
+
+
 
       {/* ═══════════════════ PORTAL ZOOM TRANSITION ═══════════════════ */}
       <div ref={zoomWrapperRef} style={{ height: '300vh', position: 'relative', background: ACCENT, clipPath: 'inset(0)' }}>

@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, useMotionValue, useTransform, useSpring } from 'framer-motion';
+import { RotateCcw } from 'lucide-react';
 
 export default function ASMonogramLogo({ size = 'hero', interactive = true }) {
   const containerRef = useRef(null);
+  const [replayKey, setReplayKey] = useState(0);
   const mouseX = useMotionValue(0.5);
   const mouseY = useMotionValue(0.5);
 
@@ -48,12 +50,54 @@ export default function ASMonogramLogo({ size = 'hero', interactive = true }) {
 
   const viewBox = "0 0 400 400";
 
+  const handleReplay = (e) => {
+    e.stopPropagation();
+    setReplayKey(prev => prev + 1);
+  };
+
   return (
     <div
       ref={containerRef}
       style={{ ...sizeStyles[size], position: 'relative', userSelect: 'none', display: 'flex', justifyContent: 'center', alignItems: 'center' }}
     >
+      {/* Replay Button */}
+      {size !== 'nav' && (
+        <button
+          onClick={handleReplay}
+          title="Replay Animation"
+          style={{
+            position: 'absolute',
+            top: '16px',
+            right: '20px',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: 'hsl(0, 0%, 45%)',
+            opacity: 0.4,
+            transition: 'all 0.3s ease',
+            zIndex: 10,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '4px'
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.opacity = '1';
+            e.currentTarget.style.color = '#f0c040';
+            e.currentTarget.style.transform = 'rotate(-30deg)';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.opacity = '0.4';
+            e.currentTarget.style.color = 'hsl(0, 0%, 45%)';
+            e.currentTarget.style.transform = 'rotate(0deg)';
+          }}
+        >
+          <RotateCcw size={16} />
+        </button>
+      )}
+
       <motion.svg
+        key={`svg-${replayKey}`}
         viewBox={viewBox}
         style={{ width: '100%', height: '100%' }}
         initial="hidden"
@@ -77,8 +121,6 @@ export default function ASMonogramLogo({ size = 'hero', interactive = true }) {
             <rect x="170" y="140" width="60" height="120" />
           </clipPath>
         </defs>
-
-
 
         <motion.g style={{ transformOrigin: '200px 200px', transform: 'scale(1.45)' }}>
           {/* The "A" — Static, structural, foundational */}
@@ -131,7 +173,7 @@ export default function ASMonogramLogo({ size = 'hero', interactive = true }) {
 
         {/* Crosshair lines — architectural reference */}
         {interactive && (
-          <>
+          <motion.g key={`crosshairs-${replayKey}`}>
             <motion.line
               x1="0"
               y1="200"
@@ -160,16 +202,13 @@ export default function ASMonogramLogo({ size = 'hero', interactive = true }) {
               transition={{ delay: 2.5, duration: 0.8 }}
               style={{ x: crosshairXOffset }}
             />
-          </>
+          </motion.g>
         )}
-
-        {/* Removed internal SVG coordinate text */}
-
-
       </motion.svg>
 
       {/* Absolute coordinates anchored perfectly to the HTML container's structural boundaries */}
       <motion.div
+        key={`x-${replayKey}`}
         style={{ position: 'absolute', top: '16px', left: '20px', color: 'hsl(0, 0%, 45%)', fontSize: '12px', fontFamily: 'var(--font-display)', letterSpacing: '0.10em' }}
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 0.5 }}
@@ -179,6 +218,7 @@ export default function ASMonogramLogo({ size = 'hero', interactive = true }) {
         {displayX}
       </motion.div>
       <motion.div
+        key={`y-${replayKey}`}
         style={{ position: 'absolute', bottom: '16px', right: '20px', color: 'hsl(0, 0%, 45%)', fontSize: '12px', fontFamily: 'var(--font-display)', letterSpacing: '0.10em' }}
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 0.5 }}
@@ -191,6 +231,7 @@ export default function ASMonogramLogo({ size = 'hero', interactive = true }) {
       {/* Label beneath the monogram */}
       {size === 'hero' && (
         <motion.div
+          key={`label-${replayKey}`}
           className="absolute -bottom-10 left-0 right-0 flex justify-center"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
