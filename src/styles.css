@@ -1,0 +1,3409 @@
+/* ============================================================
+   RENDERED IN PIXELS, POWERED BY CODE
+   A dark machine room. Every surface is a raster: hard edges,
+   square corners, dithered boundaries, phosphor accents. No
+   curves that a CRT couldn't draw.
+   ============================================================ */
+
+@font-face {
+  font-family: 'Bitram';
+  src: url('./assets/fonts/Bitram.ttf') format('truetype');
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ── tokens ─────────────────────────────────────────────────
+   The machine palette: obsidian, bone, CRT red, phosphor amber.
+   One raster system: obsidian boards, bone type, CRT accents —
+   every un-rewritten component recolours itself coherently. */
+:root {
+  --obsidian: #18181A;
+  --obsidian-2: #141416;
+  --slate: #27272A;
+  --slate-2: #2E2E32;
+  --slate-3: #3A3A40;
+  --bone: #EAE6DF;
+  --bone-dim: #A5A19A;
+  --bone-faint: #6E6B66;
+  --red: #FF4F3B;
+  --red-deep: #D93A28;
+  --amber: #FFB800;
+  --amber-deep: #C79000;
+
+  /* OS-native surfaces: obsidian floor → boards → the void below */
+  --obsidian-3: #151517;
+  --void: #101012;
+  --board: #1C1C1F;
+  --board-2: #1B1B1E;
+  --board-3: #202024;
+  --slate-deep: #232326;
+  --bone-2: #C4C0B8;
+  --bone-3: #8A867F;
+  /* PCB copper + signal trace */
+  --copper: #2C2A24;
+  --copper-2: #343026;
+  --trace: #7C7F8A;
+  --trace-dim: #4A4C55;
+
+  --line-soft: rgba(234, 230, 223, 0.14);
+
+  --font-serif: 'Bitram', 'Fragment Mono', monospace;
+  --font-sans: 'Fragment Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* raster light: shadows are hard 1-bit offsets, never blurred.
+     A pixel either casts or it doesn't. */
+  --lift-0: 2px 2px 0 rgba(0, 0, 0, 0.5);
+  --lift-1: 3px 3px 0 rgba(0, 0, 0, 0.55);
+  --lift-2: 4px 4px 0 rgba(0, 0, 0, 0.6);
+  --lift-3: 6px 6px 0 rgba(0, 0, 0, 0.65);
+  --lift-active: 1px 1px 0 rgba(0, 0, 0, 0.6);
+
+  /* CRT grain: a sparse 1-bit dot matrix, not film noise */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Crect x='14' y='22' width='2' height='2' fill='%23EAE6DF' opacity='0.05'/%3E%3Crect x='58' y='10' width='2' height='2' fill='%23EAE6DF' opacity='0.04'/%3E%3Crect x='82' y='46' width='2' height='2' fill='%23EAE6DF' opacity='0.05'/%3E%3Crect x='30' y='66' width='2' height='2' fill='%23EAE6DF' opacity='0.04'/%3E%3Crect x='66' y='84' width='2' height='2' fill='%23EAE6DF' opacity='0.05'/%3E%3Crect x='6' y='88' width='2' height='2' fill='%23FF4F3B' opacity='0.05'/%3E%3C/svg%3E");
+  /* Bayer-style dither strip: the signature boundary texture.
+     4px cells, density falls off left to right. */
+  --dither-x: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='16'%3E%3Cg fill='%23000'%3E%3Crect x='0' y='0' width='4' height='4'/%3E%3Crect x='4' y='8' width='4' height='4'/%3E%3Crect x='0' y='12' width='4' height='4'/%3E%3Crect x='8' y='4' width='4' height='4'/%3E%3Crect x='12' y='12' width='4' height='4'/%3E%3Crect x='16' y='0' width='4' height='4'/%3E%3Crect x='24' y='8' width='4' height='4'/%3E%3Crect x='32' y='4' width='4' height='4'/%3E%3Crect x='40' y='12' width='4' height='4'/%3E%3C/g%3E%3C/svg%3E");
+
+  /* chunky motion: everything snaps through frames */
+  --steps: steps(5, end);
+}
+
+/* ── base ───────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--obsidian);
+  color: var(--bone);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  /* clip beats hidden: it forbids horizontal scrolling without
+     minting a scroll container, so sticky/pinned scenes and
+     programmatic scrolls stay smooth */
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+html { overflow-x: clip; }
+h1, h2, h3, h4 {
+  font-family: var(--font-serif);
+  line-height: 1.04; margin: 0; color: inherit;
+  letter-spacing: 0.01em;
+  font-weight: 400; /* Bitram carries its own weight */
+}
+p { margin: 0; }
+a { color: inherit; }
+ul, li, dl, dd, dt, figure { margin: 0; padding: 0; list-style: none; }
+/* selections invert like a terminal */
+::selection { background: var(--bone); color: var(--obsidian); }
+:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; border-radius: 0; }
+.accent { color: var(--red); }
+
+.wrap { width: min(1180px, 92vw); margin: 0 auto; }
+
+/* the monitor itself: scanlines + sparse phosphor dots + a
+   subtle mains flicker. A worn CRT never sits perfectly still. */
+.crt-overlay {
+  position: fixed; inset: 0; z-index: 999; pointer-events: none;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.14) 0 1px, transparent 1px 3px),
+    var(--grain);
+  background-size: 100% 3px, 96px 96px;
+  opacity: 0.5;
+  overflow: hidden;
+  animation: crt-flicker 4.4s steps(2, end) infinite;
+}
+@keyframes crt-flicker {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.46; }
+}
+/* compositor off (ui module unloaded) or reduced motion: no CRT dressing */
+html[data-ui='off'] .crt-overlay { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .crt-overlay { animation: none; }
+}
+
+/* ── PCB ground — flat. The reference fields carry no texture
+   beyond a whisper grid; the dither seams do the work. Never
+   fixed-attachment (full-page repaint per scroll frame). */
+:root {
+  --pcb-grid: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Cg fill='none' stroke='%23EAE6DF' stroke-opacity='0.03' stroke-width='1'%3E%3Cpath d='M24 0V24M0 24H24'/%3E%3C/g%3E%3C/svg%3E");
+}
+.pcb-ground {
+  background-color: var(--obsidian);
+  background-image: var(--pcb-grid);
+  background-size: 24px 24px;
+  background-attachment: scroll;
+}
+html[data-ui='off'] .pcb-ground { background-image: none; }
+
+/* ── Pixel Blast — WebGL overlay layer for hero section.
+   Screen-blended over background so the red pixels
+   glow on dark surfaces like CRT phosphor. Sits at z-index 0
+   (behind sky and center content).
+   pointer-events: none on ALL elements so content stays
+   fully interactive underneath. ───────────────────────────── */
+.pixel-blast-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  mix-blend-mode: screen;
+  opacity: 0.35;
+}
+.pixel-blast-bg canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+html[data-ui='off'] .pixel-blast-bg { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .pixel-blast-bg { display: none; }
+}
+
+/* ── DITHER MATERIALIZE — the signature transition. Elements
+   don't slide in: they exist as sparse Bayer pixels that
+   coalesce into the solid thing over five held frames, exactly
+   how the reference images dissolve at their edges. Four mask
+   tiles at rising 4×4 Bayer densities (4/16 → 15/16); the
+   keyframes swap them discretely — no easing, only frames. ── */
+:root {
+  --dm1: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Cg fill='%23fff'%3E%3Crect x='0' y='0' width='4' height='4'/%3E%3Crect x='8' y='0' width='4' height='4'/%3E%3Crect x='0' y='8' width='4' height='4'/%3E%3Crect x='8' y='8' width='4' height='4'/%3E%3C/g%3E%3C/svg%3E");
+  --dm2: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Cg fill='%23fff'%3E%3Crect x='0' y='0' width='4' height='4'/%3E%3Crect x='8' y='0' width='4' height='4'/%3E%3Crect x='0' y='8' width='4' height='4'/%3E%3Crect x='8' y='8' width='4' height='4'/%3E%3Crect x='4' y='4' width='4' height='4'/%3E%3Crect x='12' y='4' width='4' height='4'/%3E%3Crect x='12' y='12' width='4' height='4'/%3E%3Crect x='4' y='12' width='4' height='4'/%3E%3C/g%3E%3C/svg%3E");
+  --dm3: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Cg fill='%23fff'%3E%3Crect x='0' y='0' width='4' height='4'/%3E%3Crect x='8' y='0' width='4' height='4'/%3E%3Crect x='0' y='8' width='4' height='4'/%3E%3Crect x='8' y='8' width='4' height='4'/%3E%3Crect x='4' y='4' width='4' height='4'/%3E%3Crect x='12' y='4' width='4' height='4'/%3E%3Crect x='12' y='12' width='4' height='4'/%3E%3Crect x='4' y='12' width='4' height='4'/%3E%3Crect x='4' y='0' width='4' height='4'/%3E%3Crect x='12' y='0' width='4' height='4'/%3E%3Crect x='12' y='8' width='4' height='4'/%3E%3Crect x='4' y='8' width='4' height='4'/%3E%3C/g%3E%3C/svg%3E");
+  --dm4: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Cg fill='%23fff'%3E%3Crect x='0' y='0' width='4' height='4'/%3E%3Crect x='8' y='0' width='4' height='4'/%3E%3Crect x='0' y='8' width='4' height='4'/%3E%3Crect x='8' y='8' width='4' height='4'/%3E%3Crect x='4' y='4' width='4' height='4'/%3E%3Crect x='12' y='4' width='4' height='4'/%3E%3Crect x='12' y='12' width='4' height='4'/%3E%3Crect x='4' y='12' width='4' height='4'/%3E%3Crect x='4' y='0' width='4' height='4'/%3E%3Crect x='12' y='0' width='4' height='4'/%3E%3Crect x='12' y='8' width='4' height='4'/%3E%3Crect x='4' y='8' width='4' height='4'/%3E%3Crect x='0' y='4' width='4' height='4'/%3E%3Crect x='8' y='4' width='4' height='4'/%3E%3Crect x='8' y='12' width='4' height='4'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+@keyframes dither-in {
+  0% { -webkit-mask-image: var(--dm1); mask-image: var(--dm1); }
+  25% { -webkit-mask-image: var(--dm2); mask-image: var(--dm2); }
+  50% { -webkit-mask-image: var(--dm3); mask-image: var(--dm3); }
+  75% { -webkit-mask-image: var(--dm4); mask-image: var(--dm4); }
+  100% { -webkit-mask-image: none; mask-image: none; }
+}
+/* popup variant: starts invisible so delayed elements don't
+   pre-render their sparse frame */
+@keyframes dither-pop {
+  0% { opacity: 0; -webkit-mask-image: var(--dm1); mask-image: var(--dm1); }
+  2% { opacity: 1; -webkit-mask-image: var(--dm1); mask-image: var(--dm1); }
+  30% { -webkit-mask-image: var(--dm2); mask-image: var(--dm2); }
+  55% { -webkit-mask-image: var(--dm3); mask-image: var(--dm3); }
+  80% { -webkit-mask-image: var(--dm4); mask-image: var(--dm4); }
+  100% { opacity: 1; -webkit-mask-image: none; mask-image: none; }
+}
+
+/* the pixel-drop canvas (pixelReveal.js) now performs the reveal, so
+   the element itself just holds hidden until triggered, then shows —
+   the covering canvas plays the dither-drop over it. The dither-in /
+   dither-pop mask keyframes above remain for reference / fallback. */
+.reveal.pending { opacity: 0; }
+.reveal.in { opacity: 1; }
+
+/* ── floating / parallax animations ───────────────────────
+   These animate the individual translate/rotate properties, NOT
+   `transform`: dioramas put these classes on SVG groups that also
+   carry a transform="translate(...)" attribute, and a `transform`
+   animation would replace that attribute instead of composing. */
+@keyframes float-layer-1 {
+  0%, 100% { translate: 0px 0px; rotate: 0deg; }
+  50% { translate: 0px -10px; rotate: 1deg; }
+}
+@keyframes float-layer-2 {
+  0%, 100% { translate: 0px 0px; rotate: 0deg; }
+  50% { translate: 0px -18px; rotate: -1.5deg; }
+}
+@keyframes float-layer-3 {
+  0%, 100% { translate: 0px 0px; rotate: 0deg; }
+  50% { translate: 0px -28px; rotate: 2deg; }
+}
+
+.float-l1 { 
+  animation: float-layer-1 4s steps(6, end) infinite; 
+  transform-origin: center;
+  transform-box: fill-box;
+}
+.float-l2 { 
+  animation: float-layer-2 4.5s steps(6, end) infinite alternate; 
+  transform-origin: center;
+  transform-box: fill-box;
+}
+.float-l3 { 
+  animation: float-layer-3 5s steps(6, end) infinite; 
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+/* ── pop-in: frame-snapped entrance for heavy panels ──────── */
+.pop-in {
+  opacity: 0;
+  transform: translateY(22px);
+}
+.reveal.in .pop-in,
+.reveal.in.pop-in {
+  opacity: 1;
+  transform: none;
+  transition: opacity 0.5s var(--steps), transform 0.5s var(--steps);
+}
+
+.float-anim {
+  animation: float 6s steps(6, end) infinite alternate;
+}
+@keyframes float {
+  0% { transform: translateY(0) rotate(-2deg); }
+  100% { transform: translateY(-15px) rotate(2deg); }
+}
+
+/* ── nav: process tabs ──────────────────────────────────── */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  display: flex; justify-content: space-between; align-items: flex-start;
+  padding: 0 clamp(14px, 3vw, 36px);
+  pointer-events: none;
+}
+.nav-brand {
+  pointer-events: auto;
+  display: inline-flex; align-items: center;
+  white-space: nowrap;
+  background: var(--slate);
+  font-family: var(--font-sans); font-weight: 700; font-size: 0.85rem;
+  letter-spacing: 0.06em;
+  color: var(--bone); text-decoration: none;
+  padding: 12px 18px 10px;
+  border: 1px solid var(--line-soft); border-top: none;
+  box-shadow: var(--lift-1);
+  transition: background 0.15s steps(2, end);
+}
+.nav-brand:hover { background: var(--slate-2); }
+.brand-mark {
+  width: 11px; height: 11px; border-radius: 0;
+  background: var(--red);
+  box-shadow: 15px 0 0 -2px var(--amber), 28px 0 0 -3.5px var(--bone-dim);
+  margin-right: 36px;
+}
+.nav-tabs { display: flex; gap: 4px; }
+/* process tabs: square, bracketed, inverse-video on hover */
+.nav-tab {
+  pointer-events: auto;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--bone-dim); text-decoration: none;
+  background: var(--slate);
+  padding: 10px 14px 8px;
+  border: 1px solid var(--line-soft); border-top: none;
+  transition: background 0.12s steps(2, end), color 0.12s steps(2, end);
+}
+.nav-tab::before { content: '['; margin-right: 5px; color: var(--bone-faint); }
+.nav-tab::after { content: ']'; margin-left: 5px; color: var(--bone-faint); }
+.nav-tab:hover {
+  background: var(--bone);
+  color: var(--obsidian);
+}
+.nav-tab:hover::before, .nav-tab:hover::after { color: var(--obsidian); }
+.nav-tab:active { background: var(--red); color: var(--obsidian); }
+
+/* ============================================================
+   HERO — the impossible cube
+   ============================================================ */
+.hero-runway {
+  /* 560vh of cube (0.82 of the total, unchanged in feel) plus ~120vh
+     that pans the taller process table up inside the pin */
+  height: 683vh; position: relative;
+  background:
+    repeating-linear-gradient(0deg, rgba(234, 230, 223, 0.02) 0 1px, transparent 1px 48px),
+    repeating-linear-gradient(90deg, rgba(234, 230, 223, 0.02) 0 1px, transparent 1px 48px),
+    var(--obsidian-3);
+}
+.hero-runway.reduced { height: auto; min-height: 100vh; }
+.hero-pin {
+  position: sticky; top: 0; height: 100vh; overflow: hidden;
+  --page: var(--obsidian);
+  background:
+    repeating-linear-gradient(0deg, rgba(234, 230, 223, 0.02) 0 1px, transparent 1px 48px),
+    repeating-linear-gradient(90deg, rgba(234, 230, 223, 0.02) 0 1px, transparent 1px 48px),
+    var(--obsidian);
+}
+
+/* ambient scraps + sprite-8 */
+.hero-scraps { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+.scrap {
+  position: absolute; display: block; opacity: 0.5;
+  border-radius: 0;
+  box-shadow: 2px 4px 6px rgba(22, 33, 62, 0.18);
+  animation: scrap-drift var(--d, 12s) steps(6, end) infinite alternate;
+  transform: rotate(var(--r, 0deg));
+}
+.pix-sprite {
+  position: absolute; display: block; opacity: 0.9;
+  filter: drop-shadow(3px 5px 5px rgba(22, 33, 62, 0.3));
+  animation: scrap-drift var(--d, 12s) steps(6, end) infinite alternate;
+  transform: rotate(var(--r, 0deg));
+}
+.pix-sprite .sprite-8 { display: block; width: 100%; height: auto; }
+.scrap.tone-red { background: var(--red); }
+.scrap.tone-dim { background: var(--bone-dim); }
+.scrap.tone-amber { background: var(--amber); }
+.scrap.tone-navy { background: var(--slate-3); }
+@keyframes scrap-drift {
+  from { transform: rotate(var(--r, 0deg)) translateY(0); }
+  to { transform: rotate(calc(var(--r, 0deg) + 14deg)) translateY(-26px); }
+}
+
+/* rails */
+.hero-rail {
+  position: absolute; left: 0; right: 0; z-index: 6;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 20px clamp(16px, 3vw, 34px);
+  font-size: 10px; font-weight: 600; letter-spacing: 0.22em;
+  color: var(--bone-dim); text-transform: uppercase;
+}
+.hero-rail.top { top: 46px; }
+.hero-rail.bottom { bottom: 0; }
+.hero-rail .mid { text-align: center; }
+.pulse-dot {
+  display: inline-block; width: 7px; height: 7px; border-radius: 0;
+  background: var(--red); margin-right: 8px;
+  animation: pulse 1.8s steps(1, end) infinite;
+}
+@keyframes pulse { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0.25; } }
+.stage-track { display: inline-flex; align-items: center; gap: 12px; }
+.stage-track .line { width: 44px; height: 1px; background: var(--line-soft); }
+.stage-track b { color: var(--red); letter-spacing: 0.2em; font-weight: 800; font-family: var(--font-sans); font-size: 11px; text-transform: uppercase; }
+.rail-progress {
+  position: absolute; left: 0; bottom: 0; height: 3px;
+  width: calc(var(--p, 0) * 100%);
+  background: linear-gradient(90deg, var(--red), var(--amber));
+}
+
+/* headline */
+.hero-head {
+  position: absolute; top: 9vh; left: 0; right: 0; z-index: 6;
+  text-align: center; pointer-events: none;
+}
+.hero-name {
+  font-family: var(--font-serif);
+  font-size: clamp(2.6rem, 7.8vw, 6.2rem);
+  font-weight: 400; letter-spacing: 0.04em; color: var(--bone);
+  /* CRT fringe: one red pixel right, one cold pixel left */
+  text-shadow: 3px 0 0 rgba(255, 79, 59, 0.35), -3px 0 0 rgba(124, 127, 138, 0.3);
+}
+.hero-sub {
+  display: flex; justify-content: center; align-items: center; gap: 14px;
+  margin-top: 10px;
+  font-family: var(--font-sans);
+  font-size: clamp(13px, 1.8vw, 18px); font-weight: 600; letter-spacing: 0.16em;
+  color: var(--bone-dim);
+}
+.hero-sub .dot { width: 5px; height: 5px; border-radius: 0; background: var(--amber); }
+.hero-tagline {
+  margin-top: 14px;
+  font-family: var(--font-sans);
+  font-size: clamp(0.85rem, 1.6vw, 1.05rem); color: var(--bone-dim);
+  letter-spacing: 0.08em;
+}
+.hero-runway.reduced .hero-head { opacity: 1 !important; transform: none !important; top: 4vh; }
+.hero-runway.reduced .cube-stage, .hero-runway.reduced .hero-rail.bottom { display: none; }
+
+/* ── the aperture: five punched sheets over the deep ────── */
+.ap-field {
+  position: absolute; inset: 0; z-index: 0;
+  background:
+    repeating-linear-gradient(0deg, rgba(234, 230, 223, 0.02) 0 1px, transparent 1px 48px),
+    repeating-linear-gradient(90deg, rgba(234, 230, 223, 0.02) 0 1px, transparent 1px 48px),
+    var(--obsidian-3);
+}
+
+/* the cube — the core, forming above the deep field */
+.cube-stage {
+  position: absolute; inset: 0; z-index: 2;
+  display: grid; place-items: center;
+  padding-top: 13vh;
+}
+.cube-float { position: relative; transform-style: preserve-3d; animation: cube-bob 7s steps(6, end) infinite; }
+@keyframes cube-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(calc(var(--bob, 1) * -12px)); }
+}
+.cube { position: relative; width: 0; height: 0; transform-style: preserve-3d; }
+.cubelet {
+  position: absolute; left: 0; top: 0;
+  width: var(--tile, 60px); height: var(--tile, 60px);
+  margin-left: calc(var(--tile, 60px) / -2);
+  margin-top: calc(var(--tile, 60px) / -2);
+  transform-style: preserve-3d;
+}
+.cf {
+  position: absolute; inset: 0;
+  /* darker body = the housing between the raised voxel faces */
+  background: var(--obsidian);
+  border: 1px solid rgba(0, 0, 0, 0.7);
+  border-radius: 0;
+  /* fade lives on the leaf faces: opacity on an ancestor would
+     flatten the preserve-3d subtree and break the perspective */
+  opacity: var(--cube-fade, 1);
+  -webkit-mask-size: 8px 8px; mask-size: 8px 8px;
+}
+/* THE SCAN: a raster line crosses the lattice bottom-right → top-left.
+   A voxel is nothing (0) until the line arrives, flares hot for one
+   beat as it crosses (1), then stands solid behind it (2). No dither
+   ladder — the travelling edge is the whole effect. State lives on the
+   leaf faces so the preserve-3d tree never flattens. */
+.cubelet[data-av='0'] .cf { opacity: 0; }
+.cubelet[data-av='1'] .cf {
+  background: var(--bone);
+  border-color: var(--bone);
+}
+/* the hot beat blows the sticker out to bare light, so the line reads
+   as a scan crossing the volume rather than a colour change */
+.cubelet[data-av='1'] .cf.sticker::after {
+  background-color: var(--bone);
+  background-image: none;
+  box-shadow: none;
+}
+.cf.front { transform: translateZ(calc(var(--tile, 60px) / 2)); }
+.cf.back { transform: rotateY(180deg) translateZ(calc(var(--tile, 60px) / 2)); }
+.cf.up { transform: rotateX(90deg) translateZ(calc(var(--tile, 60px) / 2)); }
+.cf.down { transform: rotateX(-90deg) translateZ(calc(var(--tile, 60px) / 2)); }
+.cf.right { transform: rotateY(90deg) translateZ(calc(var(--tile, 60px) / 2)); }
+.cf.left { transform: rotateY(-90deg) translateZ(calc(var(--tile, 60px) / 2)); }
+.cf.sticker::after {
+  content: '';
+  position: absolute; inset: 7%;
+  background-color: var(--sticker);
+  /* the face reads as a 4×4 pixel panel — a chunky grid etched
+     into every sticker so the voxel is unmistakably raster */
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.16) 1px, transparent 1px);
+  background-size: 25% 25%, 25% 25%;
+  border-radius: 0;
+  /* a raised voxel face: hard 1-bit offset + a top-left catchlight
+     pixel, no blur */
+  box-shadow:
+    2px 2px 0 rgba(0, 0, 0, 0.5),
+    inset 2px 2px 0 rgba(255, 255, 255, 0.18),
+    inset -2px -2px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* the experience grid */
+.proc-layer {
+  position: absolute; inset: 0; z-index: 8;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-start;
+  gap: clamp(12px, 2.4vh, 24px);
+  padding: max(56px, 8vh) 16px 10vh;
+  pointer-events: none;
+  will-change: transform;
+}
+.proc-head { text-align: center; opacity: 0; }
+.proc-head .kicker-tag { margin-bottom: 10px; }
+.proc-head h2 { font-family: var(--font-serif); font-size: clamp(1.5rem, 3.4vw, 2.5rem); font-weight: 900; letter-spacing: -0.01em; color: var(--bone); font-optical-sizing: auto; }
+.proc-head p { font-size: 13px; color: rgba(245, 238, 223, 0.6); margin-top: 4px; letter-spacing: 0.04em; }
+/* this header is centred and its own `p` rule outranks .sect-sub,
+   so the machine-name line needs restating inside it */
+.proc-head .sect-sub {
+  justify-content: center;
+  margin-top: 10px;
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.24em;
+  color: var(--bone-faint);
+}
+
+/* the strata: three terraced shelves, each its own sheet */
+.proc-grid {
+  display: flex; flex-direction: column;
+  width: min(1180px, 94vw);
+  position: relative;
+}
+
+/* ── CORE BOT PERCH — puts the bot on a panel's top-right corner ──
+   The sprite is a 15×16 pixel grid drawn into a 110×118 box, so every
+   sprite row is 1/16 of --bot-h and any cut line can be named as a
+   fraction. --peek is how much of the sprite stands ABOVE the host's
+   top edge; the rest falls below it. Two useful values:
+
+     0.625  the hip row, 40/64 down — the seat. The bot sits ON the
+            edge with its legs dangling over the face below.
+     0.5625 the row under the mouth — the whole face clears the edge
+            and nothing else does. Paired with a host that paints
+            over the anchor, the bot peeks out from BEHIND.
+
+   The sprite box also carries 8/60 of dead space either side, so the
+   inset is measured to the BODY, not the box: set --perch-inset to
+   where you want the body's right edge, and the pad is taken off.
+
+   The host needs `position: relative` and --peek × 118px of clearance
+   above it. A bot that sits on the edge also needs the (1 − --peek) ×
+   118px of face its legs hang across kept clear. */
+.core-bot-perch {
+  --bot-h: 118px;
+  --seat: 0.625;              /* hip row, as a fraction of --bot-h */
+  --peek: var(--seat);        /* how much stands above the host edge */
+  --side-pad: 14.67px;        /* empty sprite columns beside the body */
+  position: absolute;
+  bottom: 100%;
+  right: calc(var(--perch-inset, 26px) - var(--side-pad));
+  margin-bottom: calc(var(--bot-h) * (var(--peek) - 1));
+  z-index: 20;
+  pointer-events: auto;
+}
+/* on the process table, draw() fades it in with the rest of the grid */
+.proc-core-bot-anchor { opacity: 0; }
+.proc-row {
+  position: relative;
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(8px, 1.4vh, 16px);
+  padding: clamp(10px, 1.5vh, 16px);
+  border-radius: 0;
+}
+/* The rows used to paint a lighter shelf behind their tiles, which read
+   as a band across the top of every card. They are bare spacing now —
+   the tiles sit straight on the pin's ground, so --page (the colour the
+   corner notch repaints with) is the one .hero-pin already sets. */
+.proc-row.d1 { z-index: 3; }
+.proc-row.d2 { z-index: 2; margin-top: -9px; padding-top: clamp(18px, 2.4vh, 26px); }
+.proc-row.d3 { z-index: 1; margin-top: -9px; padding-top: clamp(18px, 2.4vh, 26px); }
+.proc-tile {
+  position: relative;
+  /* tall enough for the longest entry (Crackerjack, ~270px of copy) now
+     that the panel is pinned to the cell rather than hugging its text */
+  height: clamp(296px, 36vh, 344px);
+  opacity: 0;
+  border-radius: 0;
+  will-change: transform, box-shadow;
+  cursor: pointer;
+}
+.proc-tile:hover {
+  z-index: 10;
+}
+.proc-tile:hover .tile-inner {
+  box-shadow: var(--lift-3);
+  background-image: none;
+}
+.proc-tile:active .tile-inner {
+  transform: translateY(2px) rotate(0deg) scale(0.98);
+}
+.proc-tile:active .tile-inner {
+  box-shadow: var(--lift-active);
+}
+/* NB: the card also carries .notch-br, whose `position: relative` sits
+   later in this file at equal specificity and was quietly winning — which
+   let the panel size itself to its text instead of the cell, so no two
+   cards matched. Two classes here outrank it. */
+.proc-tile .tile-inner { position: absolute; inset: 0; }
+/* The copy sits in its own layer so it can be masked in as one block
+   without touching the card panel underneath. It carries the flex
+   layout and padding that used to live on .tile-inner, so the visual
+   result is identical while the panel is unfolding. */
+.tile-copy {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: flex-start;
+  padding: clamp(10px, 1.8vh, 20px) clamp(12px, 1.6vw, 20px);
+  -webkit-mask-size: 16px 16px; mask-size: 16px 16px;
+  pointer-events: none;
+}
+.tile-inner {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: flex-start;
+  /* every card carries the running process's colour — the table reads
+     as one surface, and the featured tile is marked by its amber copy
+     rather than by a panel a shade off from its neighbours */
+  background: var(--board);
+  background-image: var(--grain); background-size: 240px; background-blend-mode: multiply;
+  border-radius: 0;
+  box-shadow: var(--lift-1);
+  overflow: hidden;
+  transition: transform 0.3s steps(3, end), box-shadow 0.3s steps(3, end);
+}
+/* hover = a subtle lift plus an amber highlight, nothing revealed */
+.proc-tile:hover .tile-inner,
+.proc-tile.open .tile-inner,
+.proc-tile:focus-visible .tile-inner {
+  transform: translateY(-6px);
+  box-shadow: var(--lift-3);
+  outline: 1px solid var(--amber);
+  outline-offset: -1px;
+}
+.proc-tile:hover .tile-role,
+.proc-tile:focus-visible .tile-role { color: var(--amber); }
+.proc-tile:hover .tile-icon,
+.proc-tile:focus-visible .tile-icon { color: var(--amber); }
+.tile-icon {
+  width: 32px; height: 32px; flex: 0 0 auto;
+  display: grid; place-items: center;
+  background: var(--obsidian-3); color: var(--bone);
+  border-radius: 0;
+  box-shadow: var(--lift-0);
+  /* content stacks from the top now that the subtext is in flow */
+  margin-bottom: clamp(10px, 1.6vh, 18px);
+  transition: color 0.2s var(--steps);
+}
+.tile-icon svg { width: 19px; height: 19px; }
+.tile-role {
+  font-size: clamp(0.82rem, 1.5vw, 1.06rem); font-weight: 600;
+  color: var(--bone); margin-top: 8px;
+}
+.tile-org {
+  font-size: clamp(9px, 1vw, 11px); font-weight: 500; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--bone-dim); margin-top: 3px;
+}
+.proc-tile.featured .tile-role { color: var(--bone); }
+.proc-tile.featured .tile-org { color: var(--trace); }
+.proc-tile.featured .tile-icon { background: var(--slate); color: var(--amber); }
+/* The subtext is permanent copy now, not a hover payoff: it sits in the
+   card's flow under the org line, always readable. */
+.tile-detail {
+  margin-top: 10px;
+  color: rgba(245, 238, 223, 0.62);
+  font-size: clamp(11px, 1.05vw, 13px); line-height: 1.5;
+  pointer-events: none;
+}
+.tile-detail p { margin: 0; }
+/* the fracture overlay is a pixel-faithful clone of a cube face:
+   the whole tile is the dark cubelet housing, and ::after is the
+   raised red sticker inset 7% — identical geometry, grid and
+   bevel to .cf / .cf.sticker::after, so a voxel morphing into a
+   tile shows no seam in size or texture. */
+.tile-sticker {
+  position: absolute; inset: 0; z-index: 3;
+  background: var(--obsidian);
+  border: 1px solid rgba(0, 0, 0, 0.7);
+  border-radius: 0;
+  pointer-events: none;
+}
+.tile-sticker::after {
+  content: '';
+  position: absolute; inset: 7%;
+  background-color: var(--red);
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.16) 1px, transparent 1px);
+  background-size: 25% 25%, 25% 25%;
+  border-radius: 0;
+  box-shadow:
+    2px 2px 0 rgba(0, 0, 0, 0.5),
+    inset 2px 2px 0 rgba(255, 255, 255, 0.18),
+    inset -2px -2px 0 rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================================
+   SHEETS — shared section chrome
+   ============================================================ */
+.board { position: relative; padding: clamp(76px, 12vh, 136px) 0; }
+/* each board carries its --page color so corner-cut notches
+   know what shows through the cut. */
+/* every sector is a slightly different depth of the machine;
+   a faint 48px raster grid keeps the whole board honest */
+.builds-zone {
+  --page: var(--board-2);
+  background:
+    repeating-linear-gradient(0deg, rgba(234, 230, 223, 0.02) 0 1px, transparent 1px 48px),
+    repeating-linear-gradient(90deg, rgba(234, 230, 223, 0.02) 0 1px, transparent 1px 48px),
+    var(--board-2);
+}
+.memory-zone {
+  --page: var(--board-3);
+  background:
+    repeating-linear-gradient(0deg, rgba(234, 230, 223, 0.02) 0 1px, transparent 1px 48px),
+    repeating-linear-gradient(90deg, rgba(234, 230, 223, 0.02) 0 1px, transparent 1px 48px),
+    var(--board-3);
+}.transmit-zone {
+  --page: var(--obsidian);
+  padding-bottom: 0;
+  background:
+    repeating-linear-gradient(0deg, rgba(234, 230, 223, 0.02) 0 1px, transparent 1px 48px),
+    repeating-linear-gradient(90deg, rgba(234, 230, 223, 0.02) 0 1px, transparent 1px 48px),
+    var(--obsidian);
+}
+html[data-ui='off'] .board,
+html[data-ui='off'] .dither-edge::after,
+html[data-ui='off'] .hero-runway,
+html[data-ui='off'] .hero-pin,
+html[data-ui='off'] .ap-field { background-image: none !important; }
+.board > .wrap { position: relative; z-index: 1; }
+
+.dither-edge { height: 62px; position: relative; z-index: 2; }
+.dither-edge::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 5;
+  background:
+    repeating-linear-gradient(0deg, rgba(234, 230, 223, 0.02) 0 1px, transparent 1px 48px),
+    repeating-linear-gradient(90deg, rgba(234, 230, 223, 0.02) 0 1px, transparent 1px 48px);
+}
+.dither-edge svg { display: block; width: 100%; height: 100%; }
+.dither-edge.flip svg { transform: scaleX(-1); }
+/* the deep seam: a long two-tone dissolve, the only texture
+   between two flat grounds — straight from the reference edge */
+.dither-edge.deep { height: clamp(120px, 15vw, 190px); }
+
+.sect-header { max-width: 820px; margin-bottom: clamp(32px, 5vh, 60px); }
+.kicker-row { display: flex; align-items: center; gap: 11px; margin-bottom: 16px; }
+/* chapter number as a ribbon bookmark — notched tail, hung askew.
+   Quieter than it was: the title carries the section now. */
+.sect-number {
+  font-family: var(--font-serif); font-weight: 400; font-size: 13px;
+  color: var(--bone);
+  background: var(--red);
+  width: 30px; height: 40px; display: grid; place-items: center;
+  padding-bottom: 8px;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 7px), 0 100%);
+  filter: drop-shadow(2px 3px 3px rgba(0, 0, 0, 0.45));
+  transform: rotate(-3deg);
+}
+.kicker-tag {
+  position: relative;
+  display: inline-block;
+  background: var(--slate);
+  color: var(--bone-dim);
+  font-family: var(--font-sans);
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
+  padding: 6px 11px 5px;
+  border-radius: 0;
+  box-shadow: var(--lift-0);
+  transform: none;
+}
+/* the washi tape is now a status LED */
+.kicker-tag::before {
+  content: '';
+  position: absolute; top: -4px; left: 10px;
+  width: 8px; height: 8px;
+  transform: none;
+  background: var(--red);
+  border: none;
+}
+.sect-title {
+  font-family: var(--font-serif);
+  font-size: clamp(2.4rem, 5.4vw, 4.2rem);
+  font-weight: 900; letter-spacing: -0.02em; line-height: 1.0;
+  color: var(--bone);
+  font-optical-sizing: auto;
+}
+/* no wash behind the heading — it was the loudest thing in the
+   header and it fought the type it was meant to support */
+.title-mark {
+  position: relative;
+  display: inline;
+}
+
+/* the machine's own name for this section, kept as a quiet
+   second line rather than the headline */
+.sect-sub {
+  margin-top: 12px;
+  display: flex; align-items: center; gap: 9px;
+  font-family: var(--font-sans);
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--bone-faint);
+}
+.sect-sub::before {
+  content: ''; flex: 0 0 auto;
+  width: 16px; height: 2px;
+  background: var(--red);
+}
+.sect-lede {
+  margin-top: 16px;
+  font-size: clamp(14px, 1.5vw, 16.5px);
+  font-family: var(--font-sans);
+  font-weight: 400;
+  color: var(--bone-dim);
+  max-width: 60ch;
+  line-height: 1.55;
+}
+/* comment prefix, like a doc line in source */
+.sect-lede::before { content: '// '; color: var(--red); opacity: 0.7; }
+.tone-dark .sect-title { color: var(--bone); }
+.tone-dark .sect-lede { color: rgba(245, 238, 223, 0.66); }
+.tone-dark .kicker-tag { background: var(--board); color: var(--bone); box-shadow: 1px 2px 4px rgba(0, 0, 0, 0.35); }
+
+.mod-tag {
+  display: inline-block;
+  background: var(--slate);
+  color: var(--bone);
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 6px 11px;
+  border-radius: 0;
+  box-shadow: var(--lift-1);
+}
+/* ribbon button: bookmark notch cut into the tail end */
+.cmd-btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: var(--obsidian-2); color: var(--bone);
+  text-decoration: none;
+  font-size: 12.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 14px 32px 14px 24px;
+  border-radius: 0;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 11px) 50%, 100% 100%, 0 100%);
+  filter: drop-shadow(2px 4px 4px rgba(0, 0, 0, 0.45));
+  transition: transform 0.25s steps(3, end), filter 0.25s steps(3, end), background 0.25s steps(3, end);
+}
+.cmd-btn svg { width: 14px; height: 14px; }
+.cmd-btn:hover {
+  transform: translateY(-4px);
+  filter: drop-shadow(4px 9px 9px rgba(0, 0, 0, 0.5)) drop-shadow(8px 18px 22px rgba(0, 0, 0, 0.35));
+  background: var(--red-deep);
+}
+
+/* ============================================================
+   BUILDS — deployment stations
+   ============================================================ */
+.project-list { margin-top: clamp(30px, 5vh, 60px); }
+.project {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  gap: clamp(30px, 4.5vw, 70px);
+  align-items: center;
+  margin-top: clamp(56px, 10vh, 120px);
+}
+.project.rev .project-text { order: 2; }
+.project-meta { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.project-num {
+  font-family: var(--font-serif); font-weight: 800; font-size: 1.5rem;
+  color: var(--red);
+}
+.project-tag, .project-year {
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.18em; color: var(--bone-dim);
+}
+.project-title { font-size: clamp(1.9rem, 3.6vw, 2.8rem); font-weight: 700; color: var(--bone); }
+.project-summary { margin-top: 14px; font-size: 15.5px; color: var(--bone); max-width: 50ch; }
+.project-facts { margin-top: 24px; display: grid; gap: 14px; }
+.fact {
+  display: grid; grid-template-columns: 104px 1fr; gap: 14px;
+  padding: 12px 14px;
+  background: var(--slate);
+  border: 1px solid var(--slate-3);
+  box-shadow: var(--lift-0);
+}
+.fact dt {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.16em; color: var(--bone-3);
+  padding-top: 2px;
+}
+.fact dd { font-size: 13.5px; color: var(--bone-dim); line-height: 1.5; }
+.project-foot {
+  margin-top: 22px;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+}
+.project-foot .tags { display: flex; gap: 8px; flex-wrap: wrap; }
+.project-foot .state { font-size: 10px; font-weight: 700; letter-spacing: 0.16em; color: var(--amber-deep); }
+.project .cmd-btn { margin-top: 24px; }
+
+.project-scene { position: relative; }
+.project-scene .mon-led { display: none; }
+
+/* ── debug chip: corner toggle + build note ─────────────── */
+.debug-wrap { position: absolute; top: 0; right: 0; z-index: 6; }
+.debug-corner {
+  position: absolute; top: 0; right: 0;
+  width: 62px; height: 62px; padding: 0; border: 0; background: none;
+  cursor: pointer; z-index: 3;
+}
+/* the pad: a flat corner triangle — a diagnostic test point
+   soldered onto the station, not a curling page */
+.debug-fold {
+  position: absolute; inset: 0;
+  clip-path: polygon(100% 0, 34% 0, 100% 66%);
+  background: var(--slate-3);
+  transition: background 0.12s steps(2, end);
+}
+/* the blinking test point on the pad */
+.debug-led {
+  position: absolute; top: 9px; right: 9px;
+  width: 6px; height: 6px; background: var(--red);
+  animation: chip-blink 1.6s steps(2, end) infinite;
+}
+.debug-note {
+  position: absolute; top: 12px; right: 12px;
+  width: min(230px, 62vw);
+  background: var(--obsidian-2); color: var(--bone);
+  border-radius: 0; padding: 13px 15px;
+  box-shadow: var(--lift-2);
+  opacity: 0;
+  pointer-events: none;
+  -webkit-mask-size: 16px 16px; mask-size: 16px 16px;
+}
+.debug-note b {
+  display: block;
+  font-family: var(--font-sans); font-size: 9.5px; font-weight: 800;
+  letter-spacing: 0.16em; color: var(--amber); margin-bottom: 6px;
+}
+.debug-note p { font-size: 12px; line-height: 1.5; color: rgba(245, 238, 223, 0.9); }
+/* probe on hover of the whole scene, on corner focus, or on tap:
+   the pad inverts to live red — no curl, just a state change */
+.project-scene:hover .debug-fold,
+.debug-wrap:focus-within .debug-fold,
+.debug-wrap.debugged .debug-fold { background: var(--red); }
+.project-scene:hover .debug-led,
+.debug-wrap:focus-within .debug-led,
+.debug-wrap.debugged .debug-led { background: var(--obsidian); animation: none; }
+/* the note doesn't slide in — it materializes out of pixels.
+   Hover no longer opens it (that gesture belongs to the pixel
+   reveal now): it takes a deliberate click on the corner fold,
+   or keyboard focus. */
+.debug-wrap:focus-within .debug-note,
+.debug-wrap.debugged .debug-note {
+  opacity: 1;
+  animation: dither-pop 0.35s both;
+}
+.diorama {
+  display: block; width: 100%; height: auto;
+  border-radius: 0;
+  box-shadow: var(--lift-2);
+  transform: rotate(-1.1deg);
+  transition: transform 0.4s steps(3, end), box-shadow 0.4s steps(3, end);
+}
+.project.rev .diorama { transform: rotate(1.1deg); }
+.project:hover .diorama { transform: rotate(0deg) translateY(-8px); box-shadow: var(--lift-3); }
+.diorama g, .diorama path, .diorama circle, .diorama rect, .diorama text { transform-box: fill-box; }
+
+/* ── STATION DISPLAYS ARE INSTRUMENTS, NOT MOBILES ──────────
+   Each scene plays its build-in once when it enters view, then
+   holds perfectly still. Nothing drifts, bobs or loops at rest —
+   the float layers are silenced inside every diorama, and the
+   scene only comes alive again under a cursor. */
+.diorama .float-l1, .diorama .float-l2, .diorama .float-l3 {
+  animation: none !important;
+  translate: none !important;
+  rotate: none !important;
+}
+/* hovering a station is owned entirely by the pixel reveal — the
+   scenes themselves take no pointer input.
+
+   ── PIXELATED IMAGE REVEAL (Hover-pixel) ──
+   The blocks are absolutely placed by the component; they only
+   need their colour and their hidden default here. Retinted from
+   the source's flat `currentColor` to the board's darks with a
+   scatter of hot cells, so the dissolve speaks the same pixel
+   language as the sector wipe. */
+.pxr { position: relative; display: block; cursor: pointer; }
+.pxr-active {
+  position: absolute; inset: 0; display: none; z-index: 2;
+  /* opaque, so a letterboxed shot never lets the scene bleed through */
+  background: var(--obsidian-2);
+}
+/* The screenshots are far wider (1.84:1) than the 4:3 station frame,
+   so `cover` was slicing ~28% off each side. `contain` keeps the whole
+   shot and letterboxes it instead — the frame already reads as a
+   monitor, so bars are in character. */
+.pxr-img {
+  width: 100%; height: 100%; display: block;
+  object-fit: contain;
+  image-rendering: auto;
+}
+/* portrait artwork (MakanMates' A4 SVG) would shrink to a sliver if
+   contained — fill the frame and anchor to the top edge instead */
+.pxr[data-fit='top'] .pxr-img {
+  object-fit: cover;
+  object-position: center top;
+}
+.pxr-grid {
+  position: absolute; inset: 0; z-index: 3; pointer-events: none;
+  overflow: hidden;
+}
+.pxr-px {
+  position: absolute; display: none;
+  background: var(--obsidian-2);
+}
+/* hot cells — the same red/amber/bone accents the block wipe uses */
+.pxr-px:nth-child(7n + 3) { background: var(--red); }
+.pxr-px:nth-child(11n + 5) { background: var(--amber); }
+.pxr-px:nth-child(5n + 2) { background: var(--bone-dim); }
+.pxr-px:nth-child(13n + 8) { background: var(--board-2); }
+
+
+/* ============================================================
+   WORKSHOP — the drafting bench
+   ============================================================ */
+.bench {
+  position: relative;
+  margin-top: clamp(34px, 6vh, 64px);
+  background: var(--board);
+  background-image:
+    linear-gradient(rgba(251, 246, 234, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(251, 246, 234, 0.06) 1px, transparent 1px);
+  background-size: 28px 28px;
+  border-radius: 0;
+  box-shadow: var(--lift-2);
+  padding: clamp(44px, 5vw, 58px) clamp(16px, 2.6vw, 34px) clamp(40px, 4vw, 48px);
+}
+.bench-mat { position: absolute; inset: 0; pointer-events: none; }
+/* corrugated cardboard edge along the bench top — sharp ridges,
+   each flute casting a 1px cut shadow */
+.mat-ruler {
+  position: absolute; top: 0; left: 0; right: 0; height: 20px;
+  background:
+    repeating-linear-gradient(90deg,
+      #CBB88E 0 5px,
+      #B49B6C 5px 7px,
+      #DCCBA4 7px 10px,
+      #A8905F 10px 11px),
+    var(--copper);
+  border-radius: 0;
+  box-shadow: 0 2px 0 rgba(12, 20, 40, 0.35), 0 4px 6px rgba(12, 20, 40, 0.25);
+}
+/* punched binder holes down the bench's left margin */
+.mat-note {
+  position: absolute; bottom: 12px; right: 20px;
+  font-size: 9px; letter-spacing: 0.24em; font-weight: 600;
+  color: var(--bone-dim);
+}
+.tool-grid {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(12px, 1.6vw, 18px);
+}
+.tool {
+  position: relative;
+  background: var(--slate);
+  background-image: var(--grain); background-size: 220px; background-blend-mode: multiply;
+  border-radius: 0;
+  box-shadow: var(--lift-1);
+  padding: 16px 15px 15px;
+  display: flex; flex-direction: column; gap: 5px;
+  transition: transform 0.28s steps(3, end), box-shadow 0.28s steps(3, end);
+}
+.tool:nth-child(odd) { transform: rotate(-0.7deg); }
+.tool:nth-child(even) { transform: rotate(0.6deg); }
+.tool:hover { transform: translateY(-11px) rotate(0deg); box-shadow: var(--lift-3); z-index: 2; }
+.tool-icon {
+  width: 36px; height: 36px;
+  display: grid; place-items: center;
+  border-radius: 0;
+  color: var(--bone);
+  box-shadow: var(--lift-0);
+  margin-bottom: 5px;
+}
+.tool-icon svg { width: 20px; height: 20px; }
+.kind-ui .tool-icon { background: var(--red); color: var(--bone); }
+.kind-lang .tool-icon { background: var(--bone-dim); color: var(--bone); }
+.kind-ai .tool-icon { background: var(--amber); color: var(--bone); }
+.kind-sys .tool-icon { background: var(--trace); color: var(--bone); }
+.tool-name { font-family: var(--font-serif); font-weight: 600; font-size: 1.02rem; color: var(--bone); }
+.tool-kind { font-size: 8.5px; font-weight: 700; letter-spacing: 0.18em; color: var(--bone-dim); }
+.tool-note { font-size: 12px; line-height: 1.45; color: var(--bone-dim); margin-top: 3px; }
+
+/* foundations + big-O */
+.foundations {
+  display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: clamp(28px, 4vw, 60px);
+  align-items: center;
+  margin-top: clamp(48px, 8vh, 90px);
+}
+.foundations-copy h3 { font-size: clamp(1.6rem, 3vw, 2.2rem); color: var(--bone); margin-top: 14px; }
+.foundations-copy p { margin-top: 12px; font-size: 14.5px; color: var(--bone-dim); max-width: 48ch; }
+.bigo {
+  display: block; width: 100%; height: auto;
+  background: var(--slate);
+  border-radius: 0;
+  box-shadow: var(--lift-2);
+  padding: clamp(10px, 1.6vw, 22px);
+  transform: rotate(0.8deg);
+}
+.bigo-path { stroke-dasharray: 620; stroke-dashoffset: 620; }
+.foundations.in .bigo-path { transition: stroke-dashoffset 1.4s steps(4, end); stroke-dashoffset: 0; }
+.foundations.in .s1 .bigo-path { transition-delay: 0.2s; }
+.foundations.in .s2 .bigo-path { transition-delay: 0.4s; }
+.foundations.in .s3 .bigo-path { transition-delay: 0.6s; }
+.foundations.in .s4 .bigo-path { transition-delay: 0.8s; }
+.foundations.in .s5 .bigo-path { transition-delay: 1s; }
+.bigo-label { opacity: 0; }
+.foundations.in .bigo-label { transition: opacity 0.5s steps(3, end) 1.7s; opacity: 1; }
+.bigo-fold { opacity: 0; }
+.foundations.in .bigo-fold { transition: opacity 0.5s steps(3, end) 1.9s; opacity: 0.4; }
+
+.frame-addr {
+  display: block;
+  font-size: 9px; font-weight: 700; letter-spacing: 0.18em;
+  color: var(--bone-faint); text-transform: uppercase;
+}
+
+/* 00 — the premise */
+.f-open { width: clamp(300px, 40vw, 480px); }
+.open-kick {
+  margin-top: 18px;
+  font-family: var(--font-sans); font-size: 11px; font-weight: 800;
+  letter-spacing: 0.3em; color: var(--amber);
+}
+.open-line {
+  font-size: clamp(1.8rem, 3.4vw, 2.7rem); line-height: 1.05;
+  color: var(--bone); margin: 8px 0 14px;
+}
+.open-body {
+  margin-top: 14px; font-size: 14px; line-height: 1.6;
+  color: rgba(245, 238, 223, 0.66); max-width: 40ch;
+}
+
+/* 01 / 06 — the two daemon scenes */
+.f-daemon {
+  width: clamp(520px, 66vw, 840px);
+  display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  gap: clamp(20px, 3vw, 44px); align-items: center;
+}
+.daemon-copy h3 {
+  font-size: clamp(1.6rem, 3vw, 2.3rem); color: var(--bone); margin-top: 12px;
+}
+.daemon-copy p {
+  margin-top: 12px; font-size: 14px; line-height: 1.6;
+  color: rgba(245, 238, 223, 0.68);
+}
+.daemon-meta {
+  display: block; margin-top: 16px;
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.16em;
+  color: var(--bone-faint);
+}/* the head sweeps the buffer, frame-snapped like everything else */
+.scope-head { animation: scope-sweep 3.2s steps(20, end) infinite; }
+@keyframes scope-sweep { from { transform: translateX(0); } to { transform: translateX(317px); } }
+.irq-cell.hot { animation: irq-fire 2.4s steps(2, end) infinite; animation-delay: calc(var(--i) * 90ms); }
+@keyframes irq-fire { 0%, 70% { opacity: 1; } 71%, 100% { opacity: 0.35; } }
+
+/* 02–05 — the buffers */
+.f-buf { width: clamp(228px, 25vw, 310px); }
+.buf-art { margin-top: 14px; border: 1px solid var(--slate-3); overflow: hidden; }
+.buf-art svg { display: block; width: 100%; height: auto; }
+.buf-title {
+  margin-top: 14px;
+  font-family: var(--font-serif); font-size: 1.25rem; color: var(--bone);
+}
+.buf-note {
+  margin-top: 7px; font-size: 12.5px; line-height: 1.55;
+  color: rgba(245, 238, 223, 0.6);
+}
+.buf-meter {
+  position: absolute; top: clamp(18px, 2vw, 30px); right: clamp(18px, 2vw, 30px);
+  display: flex; gap: 2.5px; align-items: flex-end; height: 15px;
+  opacity: calc(var(--focus, 0) * 0.9);
+}
+.buf-meter i {
+  width: 3px; background: var(--bone-dim);
+  animation: buf-bounce 0.7s steps(5, end) infinite alternate;
+}
+.buf-meter i:nth-child(1) { height: 6px; animation-delay: 0s; }
+.buf-meter i:nth-child(2) { height: 13px; animation-delay: 0.12s; }
+.buf-meter i:nth-child(3) { height: 9px; animation-delay: 0.24s; }
+.buf-meter i:nth-child(4) { height: 15px; animation-delay: 0.36s; }
+.buf-meter i:nth-child(5) { height: 7px; animation-delay: 0.48s; }
+.tone-red .buf-meter i { background: var(--red); }
+.tone-amber .buf-meter i { background: var(--amber); }
+.tone-trace .buf-meter i { background: var(--trace); }
+@keyframes buf-bounce { from { transform: scaleY(0.35); } to { transform: scaleY(1); } }
+
+/* 07–09 — what ten years buys */
+.f-stat {
+  width: clamp(190px, 19vw, 250px);
+  display: flex; flex-direction: column; align-items: flex-start;
+}
+.stat-art { color: var(--amber); opacity: calc(0.5 + var(--focus, 0) * 0.5); }
+.stat-art svg { width: 38px; height: 38px; display: block; }
+.stat-big {
+  font-family: var(--font-serif); font-size: clamp(2.2rem, 4vw, 3rem);
+  font-weight: 700; color: var(--bone); line-height: 1; margin-top: 14px;
+}
+.stat-unit {
+  margin-top: 6px;
+  font-size: 9.5px; font-weight: 800; letter-spacing: 0.2em; color: var(--amber);
+}
+.stat-label {
+  margin-top: 10px; font-size: 12px; color: rgba(245, 238, 223, 0.62);
+}
+.stat-note {
+  margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft);
+  font-size: 11.5px; line-height: 1.5; color: rgba(245, 238, 223, 0.45);
+}
+
+/* 10 — the flourish: 18 cards spring open at the head */
+.f-finale {
+  width: clamp(400px, 52vw, 660px);
+  display: grid; grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+  gap: clamp(18px, 2.6vw, 38px); align-items: center;
+}
+.spring {
+  position: relative; height: clamp(190px, 24vh, 250px);
+  display: grid; place-items: center;
+}
+.spring-card {
+  position: absolute; width: 50px; height: 72px;
+  background: var(--slate);
+  border: 1px solid rgba(22, 33, 62, 0.35);
+  box-shadow: 1px 2px 3px rgba(0, 0, 0, 0.35), 4px 7px 12px rgba(0, 0, 0, 0.3);
+  background-image:
+    repeating-linear-gradient(45deg, rgba(27, 42, 74, 0.12) 0 1.5px, transparent 1.5px 7px);
+  transform-origin: 50% 165%;
+  --a: calc((var(--i) - (var(--n) - 1) / 2) * 7deg);
+  transform: rotate(calc(var(--a) * var(--focus, 0))) translateY(calc(var(--focus, 0) * -22px));
+  transition: transform 0.5s steps(6, end);
+}
+.spring-card .pip {
+  position: absolute; top: 6px; left: 6px; width: 6px; height: 6px;
+  background: var(--red);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+.spring-card:nth-child(3n) .pip { background: var(--amber); }
+.finale-copy h4 {
+  font-family: var(--font-serif); font-size: clamp(1.15rem, 2vw, 1.5rem);
+  color: var(--bone); margin-top: 12px; line-height: 1.25;
+}
+.finale-copy p {
+  margin-top: 10px; font-size: 13px; line-height: 1.6;
+  color: rgba(245, 238, 223, 0.6);
+}@media (max-width: 900px) {
+  .f-daemon, .f-finale { grid-template-columns: 1fr; width: clamp(280px, 82vw, 420px); }}
+@media (max-width: 620px) {}
+
+/* ============================================================
+   TRANSMIT — the uplink console
+   ============================================================ */
+.envelope-wrap { width: min(640px, 94vw); }
+.envelope {
+  position: relative;
+  height: clamp(500px, 78vw, 580px);
+  perspective: 1100px;
+}
+.env-body {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 42%;
+  background: #EAE0C8;
+  background-image: var(--grain); background-size: 320px; background-blend-mode: multiply;
+  border-radius: 0;
+  box-shadow: var(--lift-2);
+  z-index: 3;
+}
+.env-body::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(115deg, rgba(22, 33, 62, 0.07) 0 49.6%, transparent 50%),
+    linear-gradient(-115deg, rgba(22, 33, 62, 0.05) 0 49.6%, transparent 50%);
+  border-radius: 0;
+}
+.env-seal {
+  position: absolute; left: 50%; top: -26px;
+  transform: translateX(-50%) rotate(-5deg);
+  width: 58px; height: 58px;
+  display: grid; place-items: center;
+  background: var(--red);
+  border-radius: 0;
+  box-shadow: 2px 4px 8px rgba(22, 33, 62, 0.3), inset 2px 3px 4px rgba(255, 253, 244, 0.35);
+  font-family: var(--font-serif); font-weight: 800; font-size: 1.15rem; color: var(--bone);
+  z-index: 5;
+  transition: transform 0.5s steps(3, end) 0.9s, opacity 0.4s steps(3, end) 0.9s;
+}
+.envelope-wrap.in .env-seal { transform: translateX(-50%) rotate(-5deg) scale(0.62) translateY(120px); opacity: 0; }
+.env-flap {
+  position: absolute; left: 0; right: 0; top: 58%; height: 22%;
+  background: #E4D7B8;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  transform-origin: top center;
+  z-index: 4;
+  filter: drop-shadow(2px 4px 5px rgba(22, 33, 62, 0.2));
+}
+.envelope-wrap.in .env-flap { animation: flap-open 1s steps(3, end) forwards 0.25s; }
+@keyframes flap-open {
+  0% { transform: rotateX(0deg); z-index: 4; }
+  49% { z-index: 4; }
+  50% { z-index: 1; }
+  100% { transform: rotateX(-178deg); z-index: 1; }
+}
+.letter {
+  position: absolute; left: 6%; right: 6%; top: 3%; bottom: 13%;
+  background: var(--slate);
+  background-image: var(--grain); background-size: 260px; background-blend-mode: multiply;
+  border-radius: 0;
+  box-shadow: var(--lift-1);
+  padding: clamp(20px, 4vw, 34px) clamp(20px, 4.5vw, 38px);
+  z-index: 2;
+  transform: translateY(24%);
+  opacity: 0;
+  transition: transform 0.9s steps(3, end) 1s, box-shadow 0.9s steps(3, end) 1s, opacity 0.5s steps(3, end) 1s;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.envelope-wrap.in .letter { transform: translateY(0); opacity: 1; box-shadow: var(--lift-3); }
+.letter-salute { font-family: var(--font-serif); font-style: italic; font-size: 1.1rem; color: var(--bone); }
+.letter-body { margin-top: 10px; font-size: 13.5px; line-height: 1.65; color: var(--bone-dim); }
+.letter-links { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; }
+.letter-links a {
+  display: flex; align-items: center; gap: 14px;
+  text-decoration: none;
+  background: var(--obsidian);
+  border-radius: 0;
+  padding: 11px 14px;
+  box-shadow: var(--lift-0);
+  transition: transform 0.22s steps(3, end), box-shadow 0.22s steps(3, end);
+}
+.letter-links a:hover,
+.channel-card:hover {
+  transform: translateX(6px) translateY(-2px) !important;
+  box-shadow: var(--lift-1) !important;
+  border-color: var(--red) !important;
+  background: var(--slate) !important;
+}
+.letter-links .k {
+  flex: 0 0 76px;
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.18em; color: var(--red-deep);
+}
+.letter-links .v { font-size: 13px; font-weight: 500; color: var(--bone); overflow-wrap: anywhere; }
+.letter-links svg { width: 13px; height: 13px; margin-left: auto; color: var(--bone-dim); flex: 0 0 auto; }
+.letter-sign { margin-top: auto; padding-top: 12px; font-family: var(--font-serif); font-style: italic; font-size: 1.05rem; color: var(--bone); }
+
+/* ── punchcard teletype tape ─────────────────────────────── */
+/* the tape now rides alongside the Contact heading rather than
+   under it — heading takes the room it needs, the feed takes the
+   column that was empty to its right. That column is deliberately
+   generous: the punches spell words, and a narrow window only ever
+   shows a syllable of one. */
+.contact-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(300px, 44%, 560px);
+  gap: clamp(20px, 4vw, 56px);
+  align-items: center;
+  margin-bottom: clamp(32px, 5vh, 60px);
+}
+.contact-head .sect-header { margin-bottom: 0; }
+.punchcard-side { min-width: 0; }
+
+.punchcard-tape-wrap {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+.punchcard-scroll-container {
+  will-change: transform;
+}
+.punchcard-tape-svg {
+  display: block;
+  image-rendering: pixelated;
+}
+@keyframes punchcard-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+/* edge fade masks — hide tape ends for seamless illusion */
+.punchcard-fade-l,
+.punchcard-fade-r {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: clamp(48px, 10vw, 120px);
+  z-index: 2;
+  pointer-events: none;
+}
+.punchcard-fade-l {
+  left: 0;
+  background: linear-gradient(to right, var(--obsidian) 0%, transparent 100%);
+}
+.punchcard-fade-r {
+  right: 0;
+  background: linear-gradient(to left, var(--obsidian) 0%, transparent 100%);
+}
+/* the fades are narrower here than the old full-bleed tape needed —
+   at 300px a 120px mask would swallow most of the message */
+.punchcard-side .punchcard-fade-l,
+.punchcard-side .punchcard-fade-r { width: clamp(20px, 8%, 42px); }
+
+@media (max-width: 900px) {
+  .contact-head { grid-template-columns: 1fr; gap: 26px; }
+  /* stacked, the tape has the full measure to work with — and needs
+     most of it, since the punched glyphs only read a few letters at
+     a time in a narrow window */
+  .punchcard-side { max-width: 560px; }
+}
+/* ============================================================
+   RASTER DETAILS
+   ============================================================ */
+.sprite-8 { display: block; }
+
+/* corner-cut notch: ::before repaints the board color where the
+   corner was keyed away; ::after draws the red index mark. */
+.notch, .notch-br { position: relative; }
+.notch::before, .notch::after,
+.notch-br::before, .notch-br::after {
+  content: ''; position: absolute; right: 0;
+  width: 24px; height: 24px; pointer-events: none;
+}
+.notch::before, .notch::after { top: 0; }
+.notch-br::before, .notch-br::after { bottom: 0; }
+/* corner-cut: a hard notch chipped out of the top-right, like a
+   keyed connector or a cut circuit corner */
+.notch::before {
+  z-index: 1;
+  background: var(--page, var(--obsidian));
+  clip-path: polygon(100% 0, 0 0, 100% 100%);
+}
+.notch::after {
+  z-index: 2; width: 26px; height: 2px; top: 24px; right: -1px;
+  background: var(--red); opacity: 0.6;
+  transform: rotate(-45deg); transform-origin: right;
+}
+.notch-br::before {
+  z-index: 1;
+  background: var(--page, var(--obsidian));
+  clip-path: polygon(100% 100%, 0 100%, 100% 0);
+}
+.notch-br::after {
+  z-index: 2; width: 26px; height: 2px; bottom: 24px; right: -1px;
+  background: var(--red); opacity: 0.6;
+  transform: rotate(45deg); transform-origin: right;
+}
+.bench .tool { --page: var(--board); }
+.tile-detail { z-index: 6; }
+
+/* index tab peeking from behind each station display */
+.project-scene { position: relative; z-index: 0; }
+.scene-tab {
+  position: absolute; top: -21px; left: 36px; z-index: -1;
+  background: var(--copper); color: var(--bone);
+  font-family: var(--font-sans);
+  font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 7px 22px 30px;
+  clip-path: polygon(9px 0, calc(100% - 9px) 0, 100% 100%, 0 100%);
+  filter: drop-shadow(1px -0.5px 1px rgba(22, 33, 62, 0.2)) drop-shadow(3px -2px 3px rgba(22, 33, 62, 0.16));
+}
+.project.rev .scene-tab { left: auto; right: 36px; }
+
+/* the contact plane, already en route */
+.flight-wrap { position: relative; margin-top: clamp(18px, 3.5vh, 36px); }
+.flight { display: block; width: 100%; height: auto; opacity: 0; transition: opacity 0.8s steps(3, end) 0.3s; }
+.flight-wrap.in .flight { opacity: 0.75; }
+.flight-path { animation: dash-march 22s linear infinite; }
+@keyframes dash-march { to { stroke-dashoffset: -320; } }
+.flight-plane {
+  position: absolute; right: 4%; top: 8%; width: 76px;
+  opacity: 0; transform: rotate(16deg) translateY(10px);
+  transition: opacity 0.6s steps(3, end) 0.7s, transform 0.9s steps(3, end) 0.7s;
+}
+.flight-wrap.in .flight-plane { opacity: 1; transform: rotate(4deg) translateY(0); }
+.flight-plane .sprite-8 { width: 100%; height: auto; filter: drop-shadow(3px 5px 5px rgba(0, 0, 0, 0.5)); }
+
+/* mount pin: a small amber connector tab clipped to the top edge */
+.tile-tape {
+  position: absolute; top: -3px; left: 50%; z-index: 3;
+  width: 26px; height: 6px;
+  transform: translateX(-50%);
+  background: var(--amber);
+  clip-path: none;
+}
+.proc-tile:nth-child(2n) .tile-tape { background: var(--red); }
+.proc-tile:nth-child(3n) .tile-tape { width: 18px; }
+
+/* sharp woven-strip divider (replaces the blurred cable art) */
+/* wax-seal frame for the foundations badge */
+.seal-frame {
+  position: relative;
+  width: clamp(200px, 22vw, 280px);
+  aspect-ratio: 1;
+  margin-top: 26px;
+  border-radius: 0;
+  overflow: hidden;
+  background: var(--slate-deep);
+  box-shadow:
+    inset 3px 6px 8px rgba(22, 33, 62, 0.28),
+    inset 8px 14px 20px rgba(22, 33, 62, 0.12),
+    inset -2px -4px 6px rgba(255, 255, 255, 0.5),
+    1px 2px 2px rgba(22, 33, 62, 0.10),
+    4px 8px 12px rgba(22, 33, 62, 0.12);
+}
+.seal-frame::after {
+  content: '';
+  position: absolute; inset: 7%;
+  border-radius: 0;
+  border: 2px dashed rgba(22, 33, 62, 0.22);
+  pointer-events: none;
+}
+.seal-frame .diorama {
+  position: absolute; left: 50%; top: 50%;
+  width: 135%; height: auto;
+  transform: translate(-50%, -50%);
+  border-radius: 0; box-shadow: none;
+}
+
+/* coastal terracing: the music strata cast their own shadows */
+
+/* ── the raster world: targets, sprite clouds, phosphor stars ── */
+.radar-target { position: absolute; aspect-ratio: 1; pointer-events: none; }
+/* concentric SQUARES — a radar target, not a sun */
+.radar-target span {
+  position: absolute; border-radius: 0;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.35);
+}
+.radar-target.recessed span { box-shadow: inset 3px 3px 0 rgba(0, 0, 0, 0.4); }
+
+@keyframes cloud-drift {
+  from { translate: 0 0; }
+  to { translate: 32px -4px; }
+}
+
+.hero-sky { position: absolute; inset: 0; pointer-events: none; }
+.hero-sun { right: 5%; top: 8%; width: clamp(180px, 30vw, 430px); }
+.hero-cloud.c1 { left: 3%; top: 15%; width: clamp(120px, 17vw, 240px); --cd: 30s; }
+.hero-cloud.c2 { right: 1%; top: 55%; width: clamp(90px, 11vw, 160px); --cd: 22s; animation-direction: alternate-reverse; }
+.hero-cloud.c3 { left: 9%; bottom: 13%; width: clamp(110px, 13vw, 190px); --cd: 36s; }
+
+.board-scenery { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+.scene-cloud.pr1 { right: 4%; top: 60px; width: clamp(130px, 15vw, 220px); --cd: 32s; }
+.scene-cloud.pr2 { left: 2%; top: 46%; width: clamp(100px, 12vw, 170px); --cd: 24s; animation-direction: alternate-reverse; }
+
+.night-moon { right: 8%; top: 70px; width: clamp(130px, 16vw, 230px); opacity: 0.95; }
+/* power-down finale: the last board dissolves into the void */
+.sunset-footer { position: relative; margin-top: clamp(150px, 17vw, 230px); }
+
+/* ── the landing: the surface, a poster of its own ──────── */
+.boot-screen {
+  position: relative; min-height: 100vh; overflow: hidden;
+  display: grid; place-items: center;
+  --page: var(--obsidian);
+  background:
+    repeating-linear-gradient(0deg, rgba(234, 230, 223, 0.025) 0 1px, transparent 1px 48px),
+    repeating-linear-gradient(90deg, rgba(234, 230, 223, 0.025) 0 1px, transparent 1px 48px),
+    var(--obsidian);
+}
+
+
+.boot-screen:not(.is-ready) .diag-line,
+.boot-screen:not(.is-ready) .boot-launch,
+.boot-screen:not(.is-ready) .rl,
+.boot-screen:not(.is-ready) .name-cursor,
+.boot-screen:not(.is-ready) .hero-sub,
+.boot-screen:not(.is-ready) .hero-tagline,
+.boot-screen:not(.is-ready) .prompt,
+.boot-screen:not(.is-ready) .core-bot-wrapper,
+.boot-screen:not(.is-ready) .hero-rail {
+  animation: none !important;
+  opacity: 0 !important;
+}
+/* the two that have no entrance of their own simply fade up once the
+   portrait has landed */
+.boot-screen.is-ready .core-bot-wrapper,
+.boot-screen.is-ready .hero-rail {
+  animation: boot-arrive 0.7s steps(6, end) 0.15s both;
+}
+@keyframes boot-arrive { from { opacity: 0; } to { opacity: 1; } }
+
+/* ── THE LOAD ────────────────────────────────────────────────
+   While `booting`, the particle face is the only thing alive on
+   the page: the nav and the hero's red dither stay down so the
+   stream reads against an empty board, then arrive with the rest
+   of the hero once the portrait has formed. ParticleFace.jsx
+   drops the class; index.html carries an 8s hard fallback. */
+html.booting .nav,
+html.booting .page-field {
+  opacity: 0 !important;
+  pointer-events: none;
+}
+html:not(.booting) .nav {
+  transition: opacity 0.8s steps(6, end) 0.2s;
+}
+
+.boot-sky { position: absolute; inset: 0; pointer-events: none; }
+.boot-target { right: 6%; top: 9%; width: clamp(140px, 20vw, 300px); opacity: 0.8; }
+.boot-center { position: relative; z-index: 2; text-align: center; padding: 0 18px; }
+.boot-name { margin-top: 22px; }
+
+/* the BIOS speaks before the name renders. --bs is the boot
+   time-scale: 1 normal, ~0.05 on repeat visits, 0 for reduced. */
+.boot-screen { --bs: 1; }
+.boot-screen.fast-boot { --bs: 0.05; }
+.boot-screen.reduced-boot { --bs: 0; }
+
+.boot-diag {
+  display: inline-flex; flex-direction: column; align-items: flex-start;
+  gap: 3px; margin: 0 auto 18px;
+  font-size: clamp(9px, 1.3vw, 11.5px); letter-spacing: 0.04em;
+  color: var(--bone-faint);
+  text-align: left;
+}
+.diag-line {
+  display: block; white-space: nowrap;
+  clip-path: inset(0 100% 0 0);
+  animation: boot-type 0.42s steps(22, end) forwards;
+  animation-delay: calc(var(--dl) * 0.24s * var(--bs) + 0.1s);
+}
+.diag-line:last-child { color: var(--amber); }
+@keyframes boot-type { to { clip-path: inset(0 -2% 0 0); } }
+
+/* the launch banner + name arrive AFTER diagnostics finish */
+.boot-launch {
+  font-size: clamp(9px, 1.2vw, 11px); letter-spacing: 0.14em;
+  color: var(--amber); margin-bottom: 6px;
+  opacity: 0; animation: rl-load 0.2s steps(2, end) forwards;
+  animation-delay: calc(1.7s * var(--bs) + 0.05s);
+}
+
+/* letters load like a sprite sheet: snap in, then invert on touch */
+.rl {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(10px);
+  animation: rl-load 0.22s steps(2, end) forwards;
+  animation-delay: calc(var(--i) * 0.07s * var(--bs) + 1.85s * var(--bs) + 0.05s);
+  transition: background 0.12s steps(2, end), color 0.12s steps(2, end);
+  padding: 0 0.02em;
+}
+@keyframes rl-load { to { opacity: 1; transform: none; } }
+.rl:hover { background: var(--bone); color: var(--obsidian); }
+.rl.accent:hover { background: var(--red); color: var(--obsidian); }
+.name-cursor {
+  display: inline-block;
+  width: 0.44em; height: 0.78em;
+  margin-left: 0.08em;
+  background: var(--red);
+  animation: cursor-blink 1.1s steps(1, end) infinite;
+  animation-delay: calc(2.7s * var(--bs)); opacity: 0;
+}
+@keyframes cursor-blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+
+/* ai module toggles which tagline shows */
+.hero-tagline .tag-noai { display: none; }
+html[data-ai='off'] .hero-tagline .tag-ai { display: none; }
+html[data-ai='off'] .hero-tagline .tag-noai { display: inline; color: var(--bone-dim); }
+
+/* ── the boot prompt — a real shell on the boot screen ───── */
+.prompt {
+  margin: 26px auto 0; width: min(620px, 92vw);
+  background: var(--slate); border: 2px solid var(--slate-3);
+  box-shadow: var(--lift-2); text-align: left; cursor: text;
+  opacity: 0; animation: rl-load 0.3s steps(2, end) forwards;
+  animation-delay: calc(2.9s * var(--bs) + 0.1s);
+}
+.prompt-bar {
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 12px; background: var(--obsidian-2);
+  border-bottom: 2px solid var(--slate-3);
+  font-size: 10px; letter-spacing: 0.08em; color: var(--bone-dim);
+}
+.prompt-led { width: 8px; height: 8px; background: var(--bone-faint); }
+.prompt-led.amber { background: var(--amber); }
+.prompt-title { margin-left: 4px; color: var(--bone-dim); }
+.prompt-tty { margin-left: auto; color: var(--bone-faint); }
+.prompt-body {
+  padding: 12px 14px; max-height: 216px; overflow-y: auto;
+  font-family: var(--font-sans); font-size: 12.5px; line-height: 1.5;
+}
+.prompt-line { margin: 0; white-space: pre-wrap; word-break: break-word; color: var(--bone); }
+.prompt-line.out { color: var(--bone-dim); }
+.prompt-line.out.dim { color: var(--bone-faint); }
+.prompt-line.err { color: var(--red); }
+.prompt-line.cmd { color: var(--bone); }
+.prompt-ps1 { color: var(--red); font-weight: 700; }
+.prompt-line.input { display: flex; align-items: center; }
+.prompt-line.input input {
+  flex: 1; background: none; border: none; outline: none;
+  color: var(--bone); font-family: var(--font-sans); font-size: 12.5px;
+  caret-color: var(--red);
+}
+.prompt-line.input input::placeholder { color: var(--bone-faint); }
+
+.boot-cue {
+  position: absolute; bottom: 26px; left: 50%; z-index: 2;
+  transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  color: var(--bone-faint);
+}
+.cue-label { font-size: 10px; font-weight: 600; letter-spacing: 0.22em; }
+.cue-arrow { width: 15px; color: var(--red); animation: cue-bob 1.4s steps(3, end) infinite; }
+@keyframes cue-bob { 0%, 100% { translate: 0 0; } 50% { translate: 0 8px; } }
+
+/* ── about: still dry ───────────────────────────────────── */
+/* manifest now sits in the second slot of the descent, so it takes
+   the second stratum's tone; the kernel dive drops to obsidian-3 */
+.manifest-zone {
+  --page: var(--obsidian-2);
+  background:
+    repeating-linear-gradient(0deg, rgba(234, 230, 223, 0.02) 0 1px, transparent 1px 48px),
+    repeating-linear-gradient(90deg, rgba(234, 230, 223, 0.02) 0 1px, transparent 1px 48px),
+    var(--obsidian-2);
+}
+.about-grid {
+  display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: clamp(24px, 4vw, 56px);
+  align-items: start;
+  margin-top: clamp(30px, 5vh, 56px);
+}
+.about-card {
+  position: relative;
+  background: var(--slate);
+  background-image: var(--grain); background-size: 260px; background-blend-mode: multiply;
+  border-radius: 0;
+  box-shadow: var(--lift-2);
+  padding: clamp(26px, 4vw, 46px);
+}
+.about-card .tile-tape { top: -9px; width: 64px; height: 19px; }
+.about-lede { font-size: clamp(17px, 2vw, 21px); line-height: 1.55; color: var(--bone); }
+.about-lede b { color: var(--red-deep); font-weight: 600; }
+.about-body { margin-top: 16px; font-size: 14.5px; line-height: 1.65; color: var(--bone-dim); }
+.about-sign { margin-top: 24px; font-family: var(--font-sans); font-size: 0.95rem; letter-spacing: 0.08em; color: var(--amber); }
+.about-facts { display: flex; flex-direction: column; gap: 10px; }
+.about-cell {
+  display: grid; grid-template-columns: 104px 1fr; gap: 12px; align-items: baseline;
+  background: var(--slate);
+  padding: 13px 16px;
+  border-radius: 0;
+  box-shadow: var(--lift-1);
+}
+.about-cell:nth-child(odd) { transform: rotate(-0.4deg); }
+.about-cell:nth-child(even) { transform: rotate(0.4deg); }
+.about-cell .k { font-family: var(--font-sans); font-weight: 700; font-size: 11px; color: var(--red-deep); }
+.about-cell .v { font-size: 13px; line-height: 1.5; color: var(--bone); }
+
+
+/* ── bit field: taps emit rising 1s and 0s ──────────────── */
+
+/* data packets drifting across the board scenery */
+.pix-sprite.drift { opacity: 0.85; animation: pkt-drift var(--fd, 26s) steps(10, end) infinite alternate; }
+@keyframes pkt-drift {
+  from { translate: 0 0; }
+  to { translate: -46px -14px; }
+}
+.drift.d1 { right: 5%; top: 90px; width: 58px; --fd: 24s; }
+.drift.d2 { left: 3%; top: 42%; width: 44px; --fd: 30s; }
+.drift.d3 { right: 9%; bottom: 14%; width: 36px; --fd: 20s; }
+
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 1024px) {
+  .tool-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .foundations, .fm-wrap { grid-template-columns: 1fr; }
+}
+@media (max-width: 820px) {
+  .about-grid { grid-template-columns: 1fr; }
+  .boot-cloud.lc2 { display: none; }
+  .project { grid-template-columns: 1fr; }
+  .project.rev .project-text { order: 0; }
+  .hero-rail.top .mid { display: none; }
+  .scrap, .pix-sprite { display: none; }
+  .contact-grid { grid-template-columns: 1fr !important; }
+  .flight-plane { width: 54px; }
+  .scene-tab { left: 22px; padding: 6px 16px 28px; }
+  .hero-cloud.c2, .hero-cloud.c3, .scene-cloud.pr2, .sunset-cloud { display: none; }
+  .night-moon { right: 4%; top: 40px; }
+  .drift.d2, .drift.d3 { display: none; }
+  .proc-tile { height: clamp(88px, 15.5vh, 140px); }
+}
+@media (max-width: 640px) {
+  .nav { justify-content: center; }
+  .nav-brand { display: none; }
+  /* readable labels are longer than the old jargon ones, and a
+     nowrap row spilled past BOTH edges on a phone — taking the
+     first and last tab with it. Let the row break instead. */
+  .nav-tabs {
+    gap: 4px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 100%;
+  }
+  .nav-tab { padding: 8px 9px 6px; font-size: 9.5px; letter-spacing: 0.08em; }
+  .tool-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tool-note { display: none; }
+  .proc-head p { display: none; }
+  .tile-icon { width: 24px; height: 24px; }
+  .tile-icon svg { width: 15px; height: 15px; }
+  .hero-rail { font-size: 8.5px; letter-spacing: 0.14em; }
+  .letter-links .k { flex-basis: 58px; }
+  .debug-note { width: min(200px, 70vw); }
+}
+
+/* ============================================================
+   REDUCED MOTION — the world holds still
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
+  html { scroll-behavior: auto; }
+  .reveal.pending { opacity: 1; transform: none; }
+  .bigo-path { stroke-dashoffset: 0; }
+  .bigo-label { opacity: 1; }
+  .bigo-fold { opacity: 0.4; }
+  .envelope-wrap .env-flap { transform: rotateX(-178deg); z-index: 1; }
+  .envelope-wrap .letter { transform: none; opacity: 1; }
+  .envelope-wrap .env-seal { opacity: 0; }
+  .scrap, .pix-sprite { animation: none; }
+}
+
+/* ── 3D Folds & Creases ─────────────────────────────────── */
+.crease {
+  position: relative;
+}
+.crease::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, transparent 48%, rgba(0,0,0,0.06) 50%, rgba(255,255,255,0.2) 52%, transparent 54%);
+  z-index: 10;
+  border-radius: 0;
+}
+.folded {
+  background-image: none, var(--grain);
+  background-blend-mode: multiply;
+}
+
+.proc-tile.featured .tile-inner {
+  box-shadow: var(--lift-2);
+}
+
+/* ============================================================
+   SIGNAL TRACES — strokes draw themselves in on scroll,
+   commits bloom as blots, mist drifts over the night ridges.
+   ============================================================ */
+
+/* 1 · STROKES — every .sig-draw path is normalised (pathLength=1)
+   and painted in when its Reveal ancestor gets `.in`. */
+.sig-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+.reveal.in .sig-draw, .reveal.in.sig-draw {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset var(--dur, 1.2s) steps(14, end) var(--dd, 0s);
+}
+/* dashed dry-brush overlays can't dash-draw — they soak in late */
+.ink-fade { opacity: 0; }
+.reveal.in .ink-fade {
+  opacity: var(--o, 0.5);
+  transition: opacity 0.7s steps(3, end) var(--dd, 1.8s);
+}
+
+.sig-underline {
+  display: block;
+  width: min(210px, 70%);
+  height: 24px;
+  margin-top: 4px;
+}
+
+/* 2 · THE LEDGER — git history as a signal scroll */
+.ink-wrap {
+  display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+  gap: clamp(24px, 3.5vw, 54px);
+  align-items: center;
+  margin-top: clamp(48px, 8vh, 90px);
+}
+.ink-copy h3 { font-size: clamp(1.6rem, 3vw, 2.2rem); color: var(--bone); margin-top: 14px; }
+.ink-copy p { margin-top: 12px; font-size: 14.5px; color: var(--bone-dim); max-width: 42ch; }
+.ink-copy .ink-hint { font-style: italic; font-size: 13px; color: var(--bone-dim); }
+.commit-ledger-mount { width: 100%; }
+.commit-ledger {
+  display: block; width: 100%; height: auto;
+  border-radius: 0;
+  box-shadow: var(--lift-2);
+  transform: rotate(0.5deg);
+  background-image: none, var(--grain);
+  background-size: 240px, 200px;
+  background-blend-mode: soft-light, multiply;
+}
+
+/* commit blots bloom out of the wet stroke, springy but small */
+.ink-blot {
+  transform: scale(0);
+  transform-origin: center;
+  transform-box: fill-box;
+}
+.reveal.in .ink-blot {
+  transform: scale(1);
+  transition: transform 0.5s steps(3, end) var(--bd, 0.7s);
+}
+.ink-tag { opacity: 0; }
+.reveal.in .ink-tag { opacity: 1; transition: opacity 0.7s steps(3, end) 1.9s; }
+
+.ink-commit { cursor: pointer; outline: none; }
+.ink-commit .blot-focus { stroke: transparent; }
+.ink-commit:focus-visible .blot-focus { stroke: var(--red); }
+.commit-tip {
+  opacity: 0;
+  translate: 0 7px;
+  pointer-events: none;
+  transition: opacity 0.25s steps(3, end), translate 0.25s steps(3, end);
+}
+.ink-commit:hover .commit-tip,
+.ink-commit:focus .commit-tip,
+.ink-commit.tipped .commit-tip { opacity: 1; translate: 0 0; }@keyframes ink-drift {
+  from { translate: -46px 0; }
+  to { translate: 46px 0; }
+}
+
+@media (max-width: 900px) {
+  .ink-wrap { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sig-draw { stroke-dashoffset: 0; }
+  .ink-fade { opacity: var(--o, 0.5); }
+  .ink-blot { transform: scale(1); }
+  .ink-tag { opacity: 1; }
+}
+
+/* ============================================================
+   TORN & INKED RESTYLE — the whole vocabulary reskinned.
+   Every card is torn, not cut: asymmetric ragged radii and a
+   white deckle rim where the fibres show. Every accent is
+   brushed, not printed: ink washes on the sheets, brush swipes
+   under the titles, roughened strokes on every drawn line.
+   Cascades last, over all the component styles above.
+   ============================================================ */
+
+:root {
+  /* four tears — no two cards ripped along the same line */
+  --torn-r1: 255px 18px 225px 20px / 18px 225px 15px 255px;
+  --torn-r2: 20px 240px 24px 250px / 245px 18px 250px 22px;
+  --torn-r3: 230px 16px 245px 26px / 16px 240px 18px 235px;
+  --torn-r4: 26px 220px 16px 240px / 230px 20px 245px 16px;
+
+  /* the brush swipes became flat raster blocks */
+
+  /* the deckle fibre rim became a hairline bezel */
+  --deckle: rgba(234, 230, 223, 0.16);
+  --deckle-dim: rgba(234, 230, 223, 0.1);
+}
+
+/* 1 · SHEET WASHES — thin ink pooled at the corners of every
+   section, like a wash laid down before the collage went on. */
+/* on the night sheet the wash reads as moon-lit mist instead */
+
+/* 2 · TORN CARDS — every card ripped along its own line, with a
+   white fibre rim (outline survives every hover shadow swap). */
+.about-card, .letter { border-radius: 0; }
+.tool, .about-cell, .fact { border-radius: 0; }
+.tool:nth-child(2n), .about-cell:nth-child(2n), .fact:nth-child(2n) { border-radius: 0; }
+.tool:nth-child(3n) { border-radius: 0; }
+.tile-inner, .bigo, .terminal, .seal-frame { border-radius: 0; }
+.proc-tile:nth-child(2n) .tile-inner { border-radius: 0; }
+.debug-note { border-radius: 0; }
+
+.about-card, .about-cell, .tool, .tile-inner,
+.bigo, .fact, .terminal, .seal-frame, .letter, .debug-note {
+  outline: 1px solid var(--deckle);
+  outline-offset: -1px;
+}
+/* dimmer fibre rim where the stock sits on the night sheet */
+.proc-tile.featured .tile-inner {
+  outline-color: var(--deckle-dim);
+}
+/* focus rings must stay louder than the deckle */
+.terminal:focus-within, a:focus-visible + .tile-inner,
+.proc-tile:focus-visible .tile-inner { outline-color: var(--red); }
+
+/* flat panels: a one-pixel top catchlight and the dot matrix —
+   no creases, no crumple, no pooled washes */
+.about-card, .tool, .tile-inner, .bigo {
+  background-image:
+    linear-gradient(180deg, rgba(234, 230, 223, 0.05), transparent 26%),
+    var(--grain);
+  background-size: 100% 100%, 96px;
+  background-repeat: no-repeat, repeat;
+  background-blend-mode: normal, normal;
+}
+
+/* 4 · CHIPS — square terminal labels with a hairline bezel */
+.kicker-tag, .mod-tag {
+  border-radius: 0;
+  outline: 1px solid var(--deckle);
+  outline-offset: -1px;
+}
+.tone-dark .kicker-tag { outline-color: var(--deckle-dim); }
+
+/* 5 · NUMERALS — crisp raster, hard shadow only */
+.sect-number {
+  filter: drop-shadow(2px 2px 0 rgba(0, 0, 0, 0.6));
+}
+
+/* 6 · STROKES — pixels don't fray; every line stays crisp */
+.bigo-stream { filter: none; }
+.sig-underline path, .commit-ledger g, .commit-ledger circle,
+.pixel-scatter g, .ink-comet g, .ink-comet circle,
+.exit-seal g { filter: none; }
+
+/* 7 · BUTTONS — flat panels, hard shadow */
+.cmd-btn {
+  background-image: var(--grain);
+  background-size: 96px;
+}
+
+/* 8 · CARD FAN — square-cornered sprites */
+
+/* 9 · AUTO-DRAWN STROKES — the hero and the pinned dive scene
+   have no Reveal ancestor, so these paint themselves on load. */
+.sig-auto.sig-draw, .sig-auto .sig-draw {
+  animation: sig-auto-draw var(--dur, 1.2s) steps(3, end) var(--dd, 0s) both;
+  transition: none;
+}
+@keyframes sig-auto-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+.tagline-ink { width: 180px; height: 20px; margin: 10px auto 0; }
+.boot-ink {
+  position: absolute; left: 0; right: 0; bottom: 4%;
+  width: 100%; height: 72%;
+  pointer-events: none;
+}
+/* the arc is drawn for a wide poster — stretched into a phone
+   column it reads as a scratch through the name, so it stays
+   a desktop flourish */
+@media (max-width: 760px) {
+  .boot-ink { display: none; }
+}
+.proc-ink { width: 190px; height: 20px; margin: 8px auto 2px; }
+
+
+
+/* 11 · PROJECT FILES, ANNOTATED IN INK — the numerals are
+   stamped, the problem/solution strips get a brushed margin
+   bar, and the build status is a pressed hanko. */
+.fact { position: relative; }
+.project-facts .fact:first-child dt { color: var(--red-deep); }
+.project-foot .state {
+  border: 2px solid currentColor;
+  padding: 5px 10px 4px;
+  border-radius: 0;
+}
+.project:first-child .state { color: var(--bone-3); }
+.scene-tab { border-radius: 0; }
+
+/* 12 · SPLASHES — studio accidents pinned behind the copy.
+   Absolutely placed per-instance; multiply soaks light sheets,
+   plain paint reads as thin wash on the dark ones. */
+.pixel-scatter {
+  position: absolute; z-index: 0;
+  pointer-events: none;
+}
+@media (max-width: 640px) {
+  /* on a phone the margins vanish — scatters would sit under text */
+  .pixel-scatter { opacity: 0.55; }
+}
+
+/* NIGHT SKY EXTRAS */
+.night-comet {
+  position: absolute; width: min(240px, 26vw);
+  left: 6%; top: 8%;
+  opacity: 0.85;
+}
+
+/* 13 · THE INK THREAD — one wash line travelling the whole page.
+   Sky-toned so it reads on cream and navy stock alike; sits in
+   the z-0 band (above sheet backgrounds, under every card). */
+main { position: relative; }
+
+/* THE SEAL — pressed onto the letter after it's signed */
+.letter-content { position: relative; }
+.letter-seal {
+  position: absolute; right: 2px; bottom: -14px;
+  width: 118px;
+  mix-blend-mode: multiply;
+  opacity: 0;
+  transform: scale(1.6) rotate(-9deg);
+  pointer-events: none;
+}
+.reveal.in .letter-seal {
+  opacity: 0.85;
+  transform: scale(1) rotate(-9deg);
+  transition:
+    opacity 0.28s steps(3, end) 1.1s,
+    transform 0.4s steps(3, end) 1.1s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sig-auto.sig-draw, .sig-auto .sig-draw { animation: none; stroke-dashoffset: 0; }
+  .letter-seal { opacity: 0.85; transform: scale(1) rotate(-9deg); }
+}
+
+/* ============================================================
+   PIXEL ENFORCEMENT — cascades last. Squares every corner and
+   flattens every soft legacy shadow the earlier rules left behind,
+   so the whole board reads as one raster system.
+   ============================================================ */
+.nav-brand, .nav-tab, .kicker-tag, .mod-tag, .cmd-btn, .tool, .fact,
+.about-card, .about-cell, .tile-inner, .proc-tile, .bigo, .terminal,
+.letter, .debug-note,
+.seal-frame, .scene-tab, .tool-icon, .foundations,
+.commit-ledger,
+.contact-image, .flight-wrap, .fm-copy, .term-tab {
+  border-radius: 0;
+}
+/* hard 1-bit offset shadows only — no blur, no ambient bloom */
+.nav-brand, .nav-tab, .kicker-tag, .mod-tag, .cmd-btn, .tool, .fact,
+.about-card, .about-cell, .tile-inner, .bigo, .terminal,
+.letter, .seal-frame {
+  box-shadow: var(--lift-1) !important;
+}
+/* kill leftover soft drop-shadow filters on scenery */
+.scene-tab, .radar-target span { filter: none !important; }
+/* round seals/dots that must stay square */
+.brand-mark, .hero-sub .dot, .pulse-dot,
+.tool-icon { border-radius: 0; }
+
+/* the amber connector pin sits proud, no drop shadow */
+.tile-tape { box-shadow: none !important; }
+
+/* buttons: inverse-video press, the terminal idiom */
+.cmd-btn {
+  background: var(--red); color: var(--obsidian);
+  clip-path: none !important;
+  border: none;
+  transition: background 0.12s steps(2, end), color 0.12s steps(2, end);
+}
+.cmd-btn:hover { background: var(--bone); color: var(--obsidian); transform: none; }
+
+/* ============================================================
+   AYUSH.OS SUBSYSTEMS — boot prompt, kernel dive process table,
+   system manifest, deployment stations, memory map motherboard,
+   background processes, transmission channel, kernel panic, and
+   the cross-highlight bus that wires them into ONE machine.
+   ============================================================ */
+
+/* ── boot screen ground: PCB traces under the landing grid ── */
+.boot-screen.boot-screen {
+  background:
+    repeating-linear-gradient(0deg, rgba(234, 230, 223, 0.025) 0 1px, transparent 1px 48px),
+    repeating-linear-gradient(90deg, rgba(234, 230, 223, 0.025) 0 1px, transparent 1px 48px),
+    var(--obsidian);
+}
+.drift-sprite {
+  position: absolute; display: block;
+  animation: sprite-drift var(--d, 12s) steps(6, end) infinite alternate;
+}
+@keyframes sprite-drift {
+  from { transform: translate(0, 0); }
+  to { transform: translate(10px, -14px); }
+}
+
+/* ── kernel dive: process table headers + wireframe mode ──── */
+.wireframe-badge { display: none; color: var(--red); }
+html[data-graphics3d='off'] .wireframe-badge { display: inline; }
+/* the voxel core drops to wireframe when graphics3d unloads */
+html[data-graphics3d='off'] .cf.sticker {
+  background: transparent !important;
+  box-shadow: inset 0 0 0 2px var(--red) !important;
+}
+html[data-graphics3d='off'] .cf:not(.sticker) {
+  background: transparent !important;
+  box-shadow: inset 0 0 0 1px var(--slate-3) !important;
+}
+/* every diorama drops to stroke-only debug view */
+html[data-graphics3d='off'] .diorama path,
+html[data-graphics3d='off'] .diorama rect,
+html[data-graphics3d='off'] .diorama circle,
+html[data-graphics3d='off'] .diorama polygon {
+  fill-opacity: 0.06;
+  stroke: var(--red); stroke-width: 1;
+}
+html[data-graphics3d='off'] .diorama text { fill-opacity: 1; stroke: none; }
+html[data-graphics3d='off'] .mon-render-badge { display: block; }
+
+/* ── system manifest ──────────────────────────────────────── */
+.manifest-grid {
+  display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: clamp(24px, 4vw, 56px);
+  align-items: start;
+  margin-top: clamp(30px, 5vh, 56px);
+}
+.man-file {
+  background: var(--slate); border: 2px solid var(--slate-3);
+  box-shadow: var(--lift-2); overflow-x: auto;
+}
+.man-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 14px; background: var(--obsidian-2);
+  border-bottom: 2px solid var(--slate-3);
+  font-size: 10.5px; letter-spacing: 0.08em; color: var(--bone-dim);
+}
+.man-file-mode { color: var(--bone-faint); }
+.man-body { padding: 14px 0; font-size: 12.5px; line-height: 1.75; min-width: 480px; }
+.man-line { display: flex; }
+.man-line:hover { background: rgba(234, 230, 223, 0.03); }
+.man-n {
+  flex: 0 0 40px; text-align: right; padding-right: 14px;
+  color: var(--bone-faint); user-select: none;
+  border-right: 1px solid var(--line-soft); margin-right: 14px;
+}
+.man-code { white-space: pre-wrap; }
+.man-k { color: var(--bone-dim); }
+.man-v { color: var(--bone); }
+.man-c { color: var(--bone-faint); font-style: italic; }
+.man-focus { transition: color 0.15s steps(2, end); }
+.man-toggle {
+  font-family: var(--font-sans); font-size: 12.5px;
+  background: var(--obsidian-2); color: var(--red);
+  border: 1px solid var(--red); padding: 0 8px;
+  cursor: pointer; box-shadow: var(--lift-0);
+  transition: background 0.12s steps(2, end), color 0.12s steps(2, end);
+}
+.man-toggle.on { color: var(--amber); border-color: var(--amber); }
+.man-toggle:hover { background: var(--bone); color: var(--obsidian); }
+.man-toggle.forbidden { color: var(--red); border-color: var(--red-deep); }
+.man-forbidden .man-c { color: var(--red-deep); }
+.man-page {
+  background: var(--slate); border: 2px solid var(--slate-3);
+  box-shadow: var(--lift-2); padding: clamp(18px, 3vw, 30px);
+}
+.man-page-head {
+  display: flex; justify-content: space-between;
+  font-size: 10.5px; letter-spacing: 0.1em; color: var(--bone-faint);
+  border-bottom: 1px solid var(--line-soft); padding-bottom: 10px; margin-bottom: 16px;
+}
+.man-page-h { font-size: 13px; letter-spacing: 0.12em; color: var(--red); margin: 16px 0 6px; }
+.man-page-p { color: var(--bone-dim); font-size: 14px; }
+.man-page-p a { color: var(--amber); text-decoration: none; }
+.man-page-p a:hover { background: var(--amber); color: var(--obsidian); }
+.man-page-sign { margin-top: 20px; font-family: var(--font-serif); color: var(--bone); font-size: 1.2rem; }
+.man-page .tag-noai { display: none; }
+html[data-ai='off'] .man-page .tag-ai { display: none; }
+html[data-ai='off'] .man-page .tag-noai { display: block; color: var(--bone-dim); }
+
+/* ── monitor frame ────────────────────────────────────────── */
+.monitor {
+  background: var(--slate-2); border: 3px solid var(--slate-3);
+  box-shadow: var(--lift-2);
+}
+.mon-bar, .mon-foot {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 10px; background: var(--slate);
+  font-size: 9.5px; letter-spacing: 0.14em; color: var(--bone-dim);
+}
+.mon-bar { border-bottom: 2px solid var(--slate-3); }
+.mon-foot { border-top: 2px solid var(--slate-3); justify-content: space-between; }
+.mon-title { flex: 1; text-transform: lowercase; }
+.mon-screw { width: 5px; height: 5px; background: var(--bone-faint); }
+.mon-led {
+  width: 7px; height: 7px; background: var(--red);
+  animation: chip-blink 1.6s steps(2, end) infinite;
+  animation-play-state: paused;
+}
+.monitor.live .mon-led { animation-play-state: running; }
+.mon-hz { color: var(--bone-faint); }
+.mon-screen { position: relative; overflow: hidden; background: var(--obsidian-2); }
+.mon-screen > svg:first-child, .mon-screen > .diorama { display: block; width: 100%; height: auto; }
+.mon-sweep { position: absolute; inset: 0; pointer-events: none; }
+.mon-sweep.radar { width: 100%; height: 100%; }
+.mon-beam {
+  transform-origin: 50% 50%;
+  animation: radar-sweep 4s steps(48, end) infinite;
+  animation-play-state: paused;
+}
+.monitor.live .mon-beam { animation-play-state: running; }
+@keyframes radar-sweep { to { transform: rotate(360deg); } }
+.mon-sweep.scope {
+  inset: auto 0 0 0; top: 0; width: 2px; height: 100%;
+  background: var(--amber); opacity: 0.5;
+  animation: scope-scan 3.2s steps(56, end) infinite;
+  animation-play-state: paused;
+}
+.monitor.live .mon-sweep.scope { animation-play-state: running; }
+@keyframes scope-scan { from { transform: translateX(0); } to { transform: translateX(92vw); } }
+.mon-screen .mon-sweep.scope { animation-name: scope-scan-local; }
+@keyframes scope-scan-local { from { left: 0; } to { left: 100%; } }
+.mon-render-badge, .mon-badge {
+  display: none; position: absolute; top: 8px; right: 8px;
+  font-size: 8.5px; letter-spacing: 0.14em; padding: 3px 7px;
+  background: var(--red); color: var(--obsidian); font-weight: 700;
+}
+.mon-badge { display: block; background: var(--amber); }
+html[data-ui='off'] .mon-sweep { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .mon-sweep, .mon-led { animation: none !important; }
+}
+
+/* ── deployed builds ──────────────────────────────────────── */
+.build-filter {
+  position: sticky; top: 64px; z-index: 20;
+  display: inline-flex; align-items: center; gap: 16px;
+  margin: 18px 0 0; padding: 8px 14px;
+  background: var(--amber); color: var(--obsidian);
+  font-size: 11px; letter-spacing: 0.1em; font-weight: 700;
+  box-shadow: var(--lift-1);
+}
+.build-filter-clear {
+  font-family: var(--font-sans); font-size: 11px; font-weight: 700;
+  background: var(--obsidian); color: var(--amber);
+  border: none; padding: 3px 8px; cursor: pointer;
+}
+.build-filter-clear:hover { background: var(--bone); color: var(--obsidian); }
+.build-station { transition: opacity 0.3s var(--steps); }
+.build-station.filtered-out { opacity: 0.3; }
+.filter-stamp {
+  display: none; position: absolute; top: 20px; right: 16px; z-index: 5;
+  padding: 6px 12px; border: 2px solid var(--red); color: var(--red);
+  font-size: 13px; font-weight: 700; letter-spacing: 0.2em;
+  transform: rotate(-6deg); background: rgba(24, 24, 26, 0.85);
+}
+.build-station.filtered-out .filter-stamp { display: block; }
+.log-pre { font-style: normal; color: var(--bone-faint); }
+.fact.incident dt { color: var(--red); }
+.fact.resolution dt { color: var(--amber); }
+.mod-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.mod-row-k {
+  font-size: 9px; letter-spacing: 0.16em; color: var(--bone-faint);
+  margin-right: 4px;
+}
+.mod-chip {
+  font-family: var(--font-sans); font-size: 11px;
+  display: inline-flex; align-items: center; gap: 7px;
+  background: var(--slate); color: var(--bone);
+  border: 1px solid var(--slate-3); padding: 4px 9px;
+  cursor: pointer; box-shadow: var(--lift-0);
+  transition: background 0.12s steps(2, end), color 0.12s steps(2, end);
+}
+.mod-chip:hover { background: var(--bone); color: var(--obsidian); }
+.mod-chip:hover .mod-addr { color: var(--red-deep); }
+.mod-addr { font-style: normal; font-size: 9px; color: var(--amber); letter-spacing: 0.06em; }
+
+/* ── memory map motherboard ───────────────────────────────── */
+/* the top margin also has to clear the head, which stands
+   0.5625 × 118 ≈ 66px above the board's own edge */
+.mobo-wrap { position: relative; margin-top: clamp(80px, 9vh, 104px); }
+/* Behind the board rather than on it: the face clears the top edge,
+   everything from the hips down is hidden by the board's own opaque
+   surface, and the chips below are neither covered nor un-hoverable —
+   the board is above the anchor in both paint and hit-test order. */
+.mem-core-bot {
+  --peek: 0.5625;
+  --perch-inset: 26px;
+  z-index: 0;
+}
+.mobo {
+  /* above .mem-core-bot, so the board's own surface is what hides the
+     bot's body — see .core-bot-perch */
+  position: relative; z-index: 1; aspect-ratio: 1200 / 640;
+  background:
+    var(--pcb-grid) 0 0 / 24px 24px,
+    var(--board);
+  border: 3px solid var(--slate-3);
+  box-shadow: var(--lift-3);
+}
+.mobo-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.mobo-trace { transition: stroke 0.15s steps(2, end); }
+@keyframes trace-flow { to { stroke-dashoffset: -32; } }
+.mem-chip {
+  position: absolute; transform: translate(-50%, -50%); z-index: 2;
+  display: flex; flex-direction: column; align-items: stretch;
+  min-width: 88px; padding: 0; border: none; background: none;
+  font-family: var(--font-sans); cursor: pointer;
+  transition: opacity 0.2s var(--steps);
+}
+.chip-pins { display: flex; justify-content: space-around; height: 5px; }
+.chip-pins i { width: 3px; background: var(--bone-faint); }
+.chip-body {
+  position: relative;
+  display: flex; flex-direction: column; align-items: flex-start;
+  gap: 1px; padding: 7px 10px 6px;
+  background: var(--slate-2); border: 2px solid var(--slate-3);
+  box-shadow: var(--lift-1);
+  transition: border-color 0.12s steps(2, end), background 0.12s steps(2, end);
+}
+/* the die notch */
+.chip-body::before {
+  content: ''; position: absolute; top: 3px; right: 3px;
+  width: 5px; height: 5px; background: var(--obsidian-2);
+}
+.chip-led {
+  position: absolute; top: 5px; left: 5px;
+  width: 5px; height: 5px; background: var(--amber);
+  animation: chip-blink 1.6s steps(2, end) infinite;
+}
+@keyframes chip-blink { 0%, 60% { opacity: 1; } 61%, 100% { opacity: 0.25; } }
+.chip-name { font-size: 11px; font-weight: 700; color: var(--bone); letter-spacing: 0.03em; padding-left: 8px; }
+.chip-addr { font-size: 9px; color: var(--amber); letter-spacing: 0.1em; padding-left: 8px; }
+.mem-chip:hover .chip-body, .mem-chip:focus-visible .chip-body {
+  border-color: var(--red); background: var(--slate-3);
+}
+.mobo-readout {
+  margin-top: 12px; padding: 10px 14px;
+  background: var(--obsidian-2); border: 1px solid var(--slate-3);
+  font-size: 12px; color: var(--bone-dim); min-height: 42px;
+}
+.mobo-readout b { color: var(--bone); }
+.mobo-readout-builds { color: var(--amber); }
+.mobo-readout-idle { color: var(--bone-faint); }
+.mem-panels {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: clamp(24px, 4vw, 56px);
+  margin-top: clamp(40px, 7vh, 80px);
+  align-items: start;
+}
+.mem-panel { display: flex; flex-direction: column; gap: 20px; }
+.mem-panel .bigo { width: 100%; height: auto; display: block; }
+
+/* ── THE BUS: cross-highlight rules, one block per tech ────
+   CSS cannot compare two attributes, so each tech id gets its
+   explicit rule set. Generated from registry.js — keep in sync. */
+@keyframes chip-alarm { 0%, 55% { opacity: 1; } 56%, 100% { opacity: 0.4; } }
+
+/* dim the builds that DON'T use the hovered tech */
+html[data-tech='react'] .build-station:not([data-uses~='react']),
+html[data-tech='nextjs'] .build-station:not([data-uses~='nextjs']),
+html[data-tech='typescript'] .build-station:not([data-uses~='typescript']),
+html[data-tech='javascript'] .build-station:not([data-uses~='javascript']),
+html[data-tech='python'] .build-station:not([data-uses~='python']),
+html[data-tech='java'] .build-station:not([data-uses~='java']),
+html[data-tech='nodejs'] .build-station:not([data-uses~='nodejs']),
+html[data-tech='express'] .build-station:not([data-uses~='express']),
+html[data-tech='threejs'] .build-station:not([data-uses~='threejs']),
+html[data-tech='gsap'] .build-station:not([data-uses~='gsap']),
+html[data-tech='leaflet'] .build-station:not([data-uses~='leaflet']),
+html[data-tech='telegram-api'] .build-station:not([data-uses~='telegram-api']),
+html[data-tech='firebase'] .build-station:not([data-uses~='firebase']),
+html[data-tech='sqlite'] .build-station:not([data-uses~='sqlite']),
+html[data-tech='vite'] .build-station:not([data-uses~='vite']),
+html[data-tech='git'] .build-station:not([data-uses~='git']) {
+  opacity: 0.35;
+}
+/* dim the chips that AREN'T the hovered tech */
+html[data-tech='react'] .mem-chip:not([data-tech-id='react']),
+html[data-tech='nextjs'] .mem-chip:not([data-tech-id='nextjs']),
+html[data-tech='typescript'] .mem-chip:not([data-tech-id='typescript']),
+html[data-tech='javascript'] .mem-chip:not([data-tech-id='javascript']),
+html[data-tech='python'] .mem-chip:not([data-tech-id='python']),
+html[data-tech='java'] .mem-chip:not([data-tech-id='java']),
+html[data-tech='nodejs'] .mem-chip:not([data-tech-id='nodejs']),
+html[data-tech='express'] .mem-chip:not([data-tech-id='express']),
+html[data-tech='threejs'] .mem-chip:not([data-tech-id='threejs']),
+html[data-tech='gsap'] .mem-chip:not([data-tech-id='gsap']),
+html[data-tech='leaflet'] .mem-chip:not([data-tech-id='leaflet']),
+html[data-tech='telegram-api'] .mem-chip:not([data-tech-id='telegram-api']),
+html[data-tech='firebase'] .mem-chip:not([data-tech-id='firebase']),
+html[data-tech='sqlite'] .mem-chip:not([data-tech-id='sqlite']),
+html[data-tech='vite'] .mem-chip:not([data-tech-id='vite']),
+html[data-tech='git'] .mem-chip:not([data-tech-id='git']) {
+  opacity: 0.45;
+}
+/* light the matching trace */
+html[data-tech='react'] .mobo-trace[data-tech-id='react'],
+html[data-tech='nextjs'] .mobo-trace[data-tech-id='nextjs'],
+html[data-tech='typescript'] .mobo-trace[data-tech-id='typescript'],
+html[data-tech='javascript'] .mobo-trace[data-tech-id='javascript'],
+html[data-tech='python'] .mobo-trace[data-tech-id='python'],
+html[data-tech='java'] .mobo-trace[data-tech-id='java'],
+html[data-tech='nodejs'] .mobo-trace[data-tech-id='nodejs'],
+html[data-tech='express'] .mobo-trace[data-tech-id='express'],
+html[data-tech='threejs'] .mobo-trace[data-tech-id='threejs'],
+html[data-tech='gsap'] .mobo-trace[data-tech-id='gsap'],
+html[data-tech='leaflet'] .mobo-trace[data-tech-id='leaflet'],
+html[data-tech='telegram-api'] .mobo-trace[data-tech-id='telegram-api'],
+html[data-tech='firebase'] .mobo-trace[data-tech-id='firebase'],
+html[data-tech='sqlite'] .mobo-trace[data-tech-id='sqlite'],
+html[data-tech='vite'] .mobo-trace[data-tech-id='vite'],
+html[data-tech='git'] .mobo-trace[data-tech-id='git'] {
+  stroke: var(--red);
+  animation: trace-flow 1.2s steps(16) infinite;
+}
+/* light the matching module tags up in the build stations */
+html[data-tech='react'] .mod-chip[data-tech-id='react'],
+html[data-tech='nextjs'] .mod-chip[data-tech-id='nextjs'],
+html[data-tech='typescript'] .mod-chip[data-tech-id='typescript'],
+html[data-tech='javascript'] .mod-chip[data-tech-id='javascript'],
+html[data-tech='python'] .mod-chip[data-tech-id='python'],
+html[data-tech='java'] .mod-chip[data-tech-id='java'],
+html[data-tech='nodejs'] .mod-chip[data-tech-id='nodejs'],
+html[data-tech='express'] .mod-chip[data-tech-id='express'],
+html[data-tech='threejs'] .mod-chip[data-tech-id='threejs'],
+html[data-tech='gsap'] .mod-chip[data-tech-id='gsap'],
+html[data-tech='leaflet'] .mod-chip[data-tech-id='leaflet'],
+html[data-tech='telegram-api'] .mod-chip[data-tech-id='telegram-api'],
+html[data-tech='firebase'] .mod-chip[data-tech-id='firebase'],
+html[data-tech='sqlite'] .mod-chip[data-tech-id='sqlite'],
+html[data-tech='vite'] .mod-chip[data-tech-id='vite'],
+html[data-tech='git'] .mod-chip[data-tech-id='git'] {
+  background: var(--red); color: var(--obsidian);
+}
+/* manifest focus rows light by the hovered tech's kind */
+html[data-tech='react'] .man-focus[data-focus='ui'],
+html[data-tech='nextjs'] .man-focus[data-focus='ui'],
+html[data-tech='typescript'] .man-focus[data-focus='sys'],
+html[data-tech='javascript'] .man-focus[data-focus='sys'],
+html[data-tech='python'] .man-focus[data-focus='sys'],
+html[data-tech='java'] .man-focus[data-focus='sys'],
+html[data-tech='nodejs'] .man-focus[data-focus='sys'],
+html[data-tech='express'] .man-focus[data-focus='sys'],
+html[data-tech='threejs'] .man-focus[data-focus='ui'],
+html[data-tech='gsap'] .man-focus[data-focus='ui'],
+html[data-tech='leaflet'] .man-focus[data-focus='sys'],
+html[data-tech='telegram-api'] .man-focus[data-focus='sys'],
+html[data-tech='firebase'] .man-focus[data-focus='sys'],
+html[data-tech='sqlite'] .man-focus[data-focus='sys'],
+html[data-tech='vite'] .man-focus[data-focus='sys'],
+html[data-tech='git'] .man-focus[data-focus='sys'] {
+  color: var(--amber);
+}
+/* reverse direction: hovering a build lights its chips */
+html[data-build='sg-meethalfway'] .mem-chip:not([data-in-builds~='sg-meethalfway']),
+html[data-build='worldcup'] .mem-chip:not([data-in-builds~='worldcup']),
+html[data-build='taskbot'] .mem-chip:not([data-in-builds~='taskbot']),
+html[data-build='makanmates'] .mem-chip:not([data-in-builds~='makanmates']),
+html[data-build='ayush-os'] .mem-chip:not([data-in-builds~='ayush-os']) {
+  opacity: 0.45;
+}
+html[data-build='sg-meethalfway'] .mem-chip[data-in-builds~='sg-meethalfway'] .chip-body,
+html[data-build='worldcup'] .mem-chip[data-in-builds~='worldcup'] .chip-body,
+html[data-build='taskbot'] .mem-chip[data-in-builds~='taskbot'] .chip-body,
+html[data-build='makanmates'] .mem-chip[data-in-builds~='makanmates'] .chip-body,
+html[data-build='ayush-os'] .mem-chip[data-in-builds~='ayush-os'] .chip-body {
+  border-color: var(--amber);
+}
+html[data-build='sg-meethalfway'] .mem-chip[data-in-builds~='sg-meethalfway'] .chip-led,
+html[data-build='worldcup'] .mem-chip[data-in-builds~='worldcup'] .chip-led,
+html[data-build='taskbot'] .mem-chip[data-in-builds~='taskbot'] .chip-led,
+html[data-build='makanmates'] .mem-chip[data-in-builds~='makanmates'] .chip-led,
+html[data-build='ayush-os'] .mem-chip[data-in-builds~='ayush-os'] .chip-led {
+  background: var(--red);
+  animation: chip-alarm 0.5s steps(2, end) infinite;
+}
+
+/* ── background processes ─────────────────────────────────── */
+.ps-table {
+  margin-top: clamp(24px, 4vh, 44px);
+  border: 1px solid var(--line-soft);
+  background: rgba(0, 0, 0, 0.25);
+  font-size: 12px;
+}
+.ps-row {
+  display: grid; grid-template-columns: 90px 56px 64px 1fr;
+  gap: 12px; padding: 8px 14px;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--bone-dim);
+}
+.ps-row:last-child { border-bottom: none; }
+.ps-row.head {
+  color: var(--bone-faint); letter-spacing: 0.14em; font-size: 9.5px;
+  background: rgba(234, 230, 223, 0.04);
+}
+.ps-pid { color: var(--amber); }
+.ps-cmd { color: var(--bone); }
+
+/* ── transmission channel ─────────────────────────────────── */
+.sig-bars { display: inline-flex; align-items: flex-end; gap: 2px; }
+.sig-bars i { width: 3px; background: var(--slate-3); display: inline-block; }
+.sig-bars i.on { background: var(--amber); }
+.logtail-wrap { margin-top: clamp(48px, 8vh, 90px); }
+.logtail-monitor .mon-screen { min-height: 240px; }
+.logtail-body {
+  padding: 14px 16px; height: 240px; overflow-y: auto;
+  font-size: 11.5px; line-height: 1.7;
+}
+.logtail-line { margin: 0; white-space: nowrap; }
+.logtail-t { color: var(--bone-faint); }
+.logtail-type { color: var(--bone); font-weight: 700; }
+.logtail-type.panic, .logtail-type.cmd { color: var(--red); }
+.logtail-type.section_enter { color: var(--amber); }
+.logtail-type.chip_hover, .logtail-type.build_open { color: var(--bone-2); }
+.logtail-d { color: var(--bone-dim); }
+.logtail-cursor {
+  display: inline-block; width: 7px; height: 12px;
+  background: var(--red); vertical-align: middle;
+  animation: cursor-blink 1s steps(1, end) infinite;
+}
+.logtail-actions {
+  display: flex; align-items: center; gap: clamp(16px, 3vw, 40px);
+  margin-top: 18px; flex-wrap: wrap;
+}
+.logtail-note { flex: 1; min-width: 260px; font-size: 13px; color: var(--bone-dim); }
+.logtail-dl { flex-shrink: 0; }
+
+/* ── kernel panic ─────────────────────────────────────────── */
+.panic {
+  position: fixed; inset: 0; z-index: 2000;
+  background: var(--obsidian);
+  font-family: var(--font-sans);
+  display: grid; align-content: center;
+  padding: clamp(20px, 6vw, 90px);
+  overflow: hidden;
+}
+.panic-flash {
+  position: absolute; inset: 0;
+  animation: panic-flash 0.24s steps(2, end) forwards;
+}
+@keyframes panic-flash {
+  0%, 100% { background: var(--obsidian); }
+  50% { background: var(--bone); }
+}
+.panic-dump { position: relative; max-width: 860px; margin: 0 auto; width: 100%; }
+.panic-dump.collapsing {
+  animation: panic-collapse 0.45s steps(12, end) forwards;
+  transform-origin: center center;
+}
+@keyframes panic-collapse { to { transform: scaleY(0.004); } }
+.panic-noise {
+  height: 14px; margin-bottom: 22px;
+  background-image: var(--grain); background-size: 96px 96px;
+  opacity: 0.9;
+  animation: panic-noise 0.6s steps(8, end) infinite;
+}
+@keyframes panic-noise { to { background-position: 96px 0; } }
+.panic-line {
+  margin: 0; color: var(--red);
+  font-size: clamp(11px, 1.6vw, 14px); line-height: 1.75;
+  white-space: pre-wrap;
+  clip-path: inset(0 100% 0 0);
+  animation: boot-type 0.18s steps(18, end) forwards;
+  animation-delay: calc(var(--pl) * 90ms);
+}
+.panic-line.t { color: var(--bone); font-weight: 700; }
+.panic-line.trace { color: var(--red-deep); }
+.panic-line.dim { color: var(--bone-faint); }
+.panic-regs {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2px 18px;
+  clip-path: inset(0 100% 0 0);
+  animation: boot-type 0.3s steps(18, end) forwards;
+  animation-delay: calc(var(--pl) * 90ms);
+}
+.panic-reg { color: var(--amber); font-size: clamp(10px, 1.4vw, 12.5px); line-height: 1.7; }
+.panic-beam {
+  position: absolute; left: 8%; right: 8%; top: 50%;
+  height: 2px; background: var(--bone);
+  animation: panic-beam 0.3s steps(6, end) 0.44s forwards;
+}
+@keyframes panic-beam { to { transform: scaleX(0.01); opacity: 0; } }
+.panic-reboot { max-width: 860px; margin: 0 auto; width: 100%; }
+.panic-reboot .panic-line { color: var(--bone-dim); animation-delay: calc(var(--pl) * 180ms); }
+.panic-reboot .panic-line:last-child { color: var(--amber); }
+@media (prefers-reduced-motion: reduce) {
+  .panic-line, .panic-regs { animation: none; clip-path: none; }
+  .panic-noise, .panic-flash { display: none; }
+  .panic-dump.collapsing { animation: none; }
+}
+
+/* ── ui module OFF: the compositor goes dark ──────────────── */
+html[data-ui='off'] .board-scenery,
+html[data-ui='off'] .drift-sprite,
+html[data-ui='off'] .boot-sky,
+html[data-ui='off'] .pixel-blast-bg { display: none; }
+html[data-ui='off'] .nav-tab, html[data-ui='off'] .nav-brand {
+  box-shadow: none !important; border-color: transparent !important;
+}
+
+/* ── responsive: the machine folds to one column ──────────── */
+@media (max-width: 900px) {
+  .manifest-grid { grid-template-columns: 1fr; }
+  .mem-panels { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  /* the motherboard reflows: traces off, chips into a grid */
+  .mobo { aspect-ratio: auto; padding: 16px 12px; }
+  .mobo-svg { display: none; }
+  .mem-chip {
+    position: static; transform: none;
+    min-height: 44px;
+  }
+  .mobo { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .prompt-body { max-height: 168px; }
+  .boot-diag { font-size: 8.5px; }
+  .ps-row { grid-template-columns: 74px 40px 50px 1fr; gap: 8px; font-size: 11px; }
+  .contact-grid { grid-template-columns: 1fr !important; }
+  .logtail-line { white-space: normal; }
+}
+
+/* ============================================================
+   MINIMAL PIXEL PASS — dither is the only motion language.
+   Popups materialize from Bayer dust; filtered elements de-rez
+   into half-resolution ghosts instead of fading; the panic dump
+   assembles itself pixel by pixel. Cascades last.
+   ============================================================ */
+
+/* the filter bar pops out of dust when a filter lands */
+.build-filter { animation: dither-pop 0.4s both; -webkit-mask-size: 16px 16px; mask-size: 16px 16px; }
+
+/* filtered-out stations DE-REZ: half their pixels drop out —
+   the SKIPPED stamp inside dithers with them */
+.build-station { transition: opacity 0.25s var(--steps); }
+.build-station.filtered-out {
+  opacity: 0.8;
+  -webkit-mask-image: var(--dm2); mask-image: var(--dm2);
+  -webkit-mask-size: 16px 16px; mask-size: 16px 16px;
+}
+
+/* process-table detail: no 3D flip — it materializes in place */
+.tile-detail {
+  transform: none; transition: none;
+  -webkit-mask-size: 16px 16px; mask-size: 16px 16px;
+}
+.proc-tile:hover .tile-detail,
+.proc-tile.open .tile-detail,
+.proc-tile:focus-visible .tile-detail { animation: dither-pop 0.3s both; }
+
+/* the boot prompt assembles out of dust after the name lands */
+.prompt {
+  animation-name: dither-pop;
+  animation-duration: 0.5s;
+  -webkit-mask-size: 16px 16px; mask-size: 16px 16px;
+}
+
+/* the panic register dump materializes before it types */
+.panic-dump { animation: dither-pop 0.45s both; -webkit-mask-size: 16px 16px; mask-size: 16px 16px; }
+.panic-dump.collapsing { animation: panic-collapse 0.45s steps(12, end) forwards; }
+
+/* manifest toggles flick through dust when flipped */
+.man-toggle:active { -webkit-mask-image: var(--dm3); mask-image: var(--dm3); -webkit-mask-size: 8px 8px; mask-size: 8px 8px; }
+
+/* chip readout strip re-materializes on change is overkill —
+   but the hovered chip itself sharpens: idle chips sit at a
+   whisper, the probed one snaps to full presence */
+.mobo:hover .mem-chip:not(:hover):not(:focus-visible) { opacity: 0.72; }
+
+/* reduced motion: no masks, no materialize — things just appear */
+@media (prefers-reduced-motion: reduce) {
+  .reveal.in, .reveal.in[data-delay],
+  .build-filter, .debug-note, .tile-detail, .prompt, .panic-dump {
+    animation: none !important;
+    -webkit-mask-image: none !important; mask-image: none !important;
+  }
+  .project-scene:hover .debug-note,
+  .debug-wrap:focus-within .debug-note,
+  .debug-wrap.debugged .debug-note { opacity: 1; }
+  .proc-tile:hover .tile-detail, .proc-tile.open .tile-detail { opacity: 1; }
+  .prompt { opacity: 1; }
+  .build-station.filtered-out { opacity: 0.4; -webkit-mask-image: none !important; mask-image: none !important; }
+}
+
+/* ============================================================
+   WARP — travelling between subsystems is itself a pixel event.
+   The wipe de-rezzes the whole screen into chunky Bayer blocks
+   (the game-cart transition), teleports the scroll underneath,
+   then dissolves off the new sector. The HUD toast announces
+   every crossing; seam cells flicker like unstable memory.
+   ============================================================ */
+/* ── BLOCK WIPE — seven columns cascade through the screen ──
+   Ported from the BlockLoader in my-portfolio/ and rethemed to the
+   machine: the loader's signature move is a staggered column
+   cascade, so here the columns FALL IN from above to cover, the
+   scroll teleports underneath, and they keep FALLING OUT the
+   bottom to reveal — one continuous drop. Everything is
+   frame-snapped with steps() and checker-textured; no easing
+   curves, no text, no glass. */
+.block-wipe {
+  /* THE TWO DIALS.
+     --fall    how long ONE column takes to cross the screen
+     --stagger the gap between neighbouring columns starting
+     The cascade is only legible while the columns are out of step,
+     and that window lasts 6 × --stagger. At 22ms it was 132ms — about
+     eight frames — which is why it read as one solid slab. */
+  --fall: 280ms;
+  --stagger: 80ms;
+  position: fixed; inset: 0; z-index: 1500;
+  display: grid; grid-template-columns: repeat(var(--cols, 7), 1fr);
+  pointer-events: none;
+}
+.block-wipe.cover, .block-wipe.uncover { pointer-events: auto; }
+
+.bw-col {
+  position: relative;
+  background-color: var(--obsidian-2);
+  /* chunky 8-bit checker so a column reads as raster, not a panel */
+  background-image:
+    linear-gradient(45deg, rgba(0, 0, 0, 0.32) 25%, transparent 25% 75%, rgba(0, 0, 0, 0.32) 75%),
+    linear-gradient(45deg, rgba(0, 0, 0, 0.32) 25%, transparent 25% 75%, rgba(0, 0, 0, 0.32) 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 8px 8px;
+  /* parked above the viewport — the wipe is invisible at rest */
+  transform: translateY(-101%);
+  will-change: transform;
+}
+/* alternating tones far enough apart to actually separate the columns —
+   near-identical obsidians read as one solid mass in motion */
+.bw-col:nth-child(2n) { background-color: var(--board-2); }
+.bw-col:nth-child(3n) { background-color: var(--obsidian); }
+/* a thick lit front plus a stepped trail, so each column's leading
+   edge is unmistakable and the stagger is legible in flight */
+.bw-col::after {
+  content: '';
+  position: absolute; left: 0; right: 0; bottom: 0; height: 6px;
+  background: var(--red);
+  box-shadow: 0 -5px 0 rgba(255, 79, 59, 0.28);
+}
+.bw-col:nth-child(3n)::after {
+  background: var(--amber); box-shadow: 0 -5px 0 rgba(255, 184, 0, 0.28);
+}
+.bw-col:nth-child(5n)::after {
+  background: var(--bone); box-shadow: 0 -5px 0 rgba(234, 230, 223, 0.22);
+}
+
+/* THE CASCADE. Each column starts --stagger after the one to its left,
+   so the seven fronts sit at seven different heights for 6 × --stagger
+   (480ms ≈ 29 frames) — long enough to actually read as a cascade.
+     one phase : 280 + 6×80 = 760ms  */
+.block-wipe.cover .bw-col {
+  transform: translateY(0);
+  transition: transform var(--fall) steps(7, end);
+  transition-delay: calc(var(--i) * var(--stagger));
+}
+.block-wipe.uncover .bw-col {
+  transform: translateY(101%);
+  transition: transform var(--fall) steps(7, end);
+  transition-delay: calc(var(--i) * var(--stagger));
+}
+
+/* ── sector toast: bottom-left crossing announcement ──────── */
+.sector-hud {
+  position: fixed; left: 18px; bottom: 18px; z-index: 900;
+  pointer-events: none;
+  display: flex; align-items: center; gap: 8px;
+  background: var(--obsidian-2);
+  border: 1px solid var(--slate-3);
+  box-shadow: var(--lift-1);
+  padding: 8px 13px;
+  font-size: 10px; letter-spacing: 0.14em;
+  color: var(--bone-dim);
+  -webkit-mask-size: 16px 16px; mask-size: 16px 16px;
+}
+.sector-hud b { color: var(--amber); }
+.hud-px {
+  width: 7px; height: 7px; background: var(--red);
+  animation: cursor-blink 0.9s steps(1, end) infinite;
+}
+.sector-hud.show { animation: dither-pop 0.32s both; }
+.sector-hud.hide { animation: hud-out 0.34s both; }
+@keyframes hud-out {
+  0% { opacity: 1; -webkit-mask-image: none; mask-image: none; }
+  35% { -webkit-mask-image: var(--dm4); mask-image: var(--dm4); }
+  70% { -webkit-mask-image: var(--dm2); mask-image: var(--dm2); }
+  100% { opacity: 0; -webkit-mask-image: var(--dm1); mask-image: var(--dm1); }
+}
+
+/* ── seam shimmer: threshold cells + sparks blink in frames ── */
+.edge-live {
+  animation: cell-blink 2.4s steps(1, end) infinite;
+  animation-delay: var(--sd, 0s);
+}
+@keyframes cell-blink {
+  0%, 54%, 100% { opacity: 0; }
+  55%, 76% { opacity: 1; }
+}
+.edge-spark {
+  animation: spark-blink 3.2s steps(1, end) infinite;
+  animation-delay: var(--sd, 0s);
+}
+@keyframes spark-blink {
+  0%, 62%, 100% { opacity: 1; }
+  63%, 80% { opacity: 0.15; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .block-wipe { display: none; }
+  .sector-hud { animation: none !important; -webkit-mask-image: none !important; mask-image: none !important; }
+  .edge-live, .edge-spark { animation: none; }
+  .edge-live { opacity: 0.5; }
+}
+@media (max-width: 640px) {
+  .sector-hud { left: 10px; bottom: 10px; font-size: 9px; }
+}
+
+/* ============================================================
+   AS MONOGRAM — the signing mark in the transmission console.
+   Ported from the old portfolio's framer-motion logo into the
+   machine's idiom: stepped path-plotting, hard square caps,
+   bone A + red S, amber solder-points, a plotter-bed crosshair.
+   ============================================================ */
+.monogram {
+  position: relative;
+  width: 100%; aspect-ratio: 1 / 1; max-height: 400px;
+  display: grid; place-items: center;
+  background: var(--obsidian-2);
+  cursor: pointer; overflow: hidden;
+}
+.mono-svg { width: 100%; height: 100%; display: block; }
+.mono-glyphs { transform-origin: 200px 200px; transform: scale(1.4); }
+
+/* the plotter-bed crosshair — dashed reference lines that ride
+   the pointer, hard 1px phosphor */
+.mono-cx {
+  stroke: var(--bone-faint); stroke-width: 1; stroke-dasharray: 3 9;
+  opacity: 0; will-change: transform;
+}
+.monogram.drawn .mono-cross .mono-cx:first-child { animation: mono-fade 0.8s steps(4, end) forwards 2.2s; }
+.monogram.drawn .mono-cross .mono-cx:last-child { animation: mono-fade 0.8s steps(4, end) forwards 2.35s; }
+@keyframes mono-fade { to { opacity: 0.45; } }
+
+/* the letters — plotted stroke by stroke in stepped frames */
+.mono-a, .mono-s {
+  fill: none; stroke-width: 6;
+  stroke-linecap: square; stroke-linejoin: miter;
+  stroke-dasharray: 1; stroke-dashoffset: 1;
+}
+.mono-a { stroke: var(--bone); }
+.mono-s { stroke: var(--red); will-change: transform; }
+.monogram.drawn .mono-a { animation: mono-plot 1.4s steps(26, end) forwards 0.2s; }
+.monogram.drawn .mono-s { animation: mono-plot 1.5s steps(30, end) forwards 0.7s; }
+@keyframes mono-plot { to { stroke-dashoffset: 0; } }
+
+/* solder-points snap on after their stroke has passed */
+.mono-nodes rect { fill: var(--amber); opacity: 0; }
+.monogram.drawn .mono-nodes rect { animation: mono-node 0.2s steps(2, end) forwards var(--nd, 1.6s); }
+@keyframes mono-node { to { opacity: 1; } }
+
+/* plotter-bed readout — amber coordinates + pixelised replay button */
+.mono-x, .mono-y {
+  position: absolute; font-family: var(--font-sans);
+  font-size: 10px; letter-spacing: 0.14em; color: var(--amber);
+  opacity: 0; pointer-events: none;
+}
+.mono-x { top: 12px; left: 14px; }
+.mono-y { bottom: 12px; right: 14px; }
+.monogram.drawn .mono-x { animation: mono-show 0.5s steps(3, end) forwards 2.6s; }
+.monogram.drawn .mono-y { animation: mono-show 0.5s steps(3, end) forwards 2.75s; }
+@keyframes mono-show { to { opacity: 0.85; } }
+
+.mono-replay {
+  position: absolute; top: 12px; right: 14px;
+  display: grid; place-items: center;
+  width: 26px; height: 20px; padding: 0;
+  background: transparent; border: none;
+  color: var(--bone-faint);
+  cursor: pointer; z-index: 10;
+  opacity: 0;
+  transition: color 0.15s ease, transform 0.15s ease;
+  image-rendering: pixelated;
+}
+.monogram.drawn .mono-replay { animation: mono-show 0.5s steps(3, end) forwards 2.9s; }
+.mono-replay:hover {
+  color: var(--amber);
+  transform: scale(1.15);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .monogram .mono-a, .monogram .mono-s { stroke-dashoffset: 0; animation: none; }
+  .monogram .mono-nodes rect { opacity: 1; animation: none; }
+  .monogram .mono-cx { opacity: 0.45; animation: none; }
+  .monogram .mono-x, .monogram .mono-y, .monogram .mono-replay { opacity: 0.85; animation: none; }
+}
+
+/* ============================================================
+   BOOT HERO — the operator IS the background now. Diagnostics +
+   name + prompt sit left; the particle-face portrait is a full-
+   hero layer, right-anchored and bleeding off the edge, at the
+   same density and intensity throughout — no scrim, the column
+   offset alone keeps the text clear of the densest particles.
+   ============================================================ */
+.boot-stage {
+  position: relative; z-index: 2;
+  width: min(1260px, 94vw); margin: 0 auto;
+}
+/* keep the content column on the left so the face reveals to its right */
+.boot-stage .boot-center {
+  position: relative; min-width: 0;
+  max-width: min(640px, 58%);
+  margin-right: auto;
+}
+
+/* keep the red PixelBlast dither near the face but not on it: the
+   ambient layer stays full through the centre, then thins across a
+   soft gradient so pixels approach the portrait and fade out just
+   before its particles begin — never interjecting into the face */
+
+
+/* The particle person — full-hero background, boxless. The CANVAS spans
+   the whole hero so the load sequence can sweep the entire page; the
+   portrait's own resting place is pushed right inside it by the shader
+   (uFaceOffset), which keeps the old right-anchored composition without
+   penning the pixels into the right-hand third. */
+.particle-face {
+  position: absolute; z-index: 1;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+.particle-face canvas {
+  position: absolute; inset: 0; display: block;
+  width: 100% !important; height: 100% !important;
+  pointer-events: none;
+}
+.pf-off {
+  position: absolute; inset: 0; z-index: 4; display: none;
+  place-items: center;
+  font-family: var(--font-sans); font-size: 11px; letter-spacing: 0.18em;
+  color: var(--red); opacity: 0.6;
+}
+.particle-face.gfx-off canvas { display: none; }
+.particle-face.gfx-off .pf-off { display: grid; }
+
+/* compositor off or reduced motion → the face stands down */
+html[data-ui='off'] .particle-face { display: none; }
+
+@media (max-width: 900px) {
+  .boot-stage { width: auto; }
+  .boot-stage .boot-center { max-width: none; margin: 0 auto; }
+  .particle-face { display: none; }
+}
+
+/* keep the wordmark on one line, sized to its column */
+.boot-stage .hero-name {
+  font-size: clamp(2rem, 5vw, 4.4rem);
+  white-space: nowrap;
+}
+.boot-stage .boot-diag { font-size: clamp(8px, 1.05vw, 10.5px); }
+@media (max-width: 900px) {
+  .boot-stage .hero-name { font-size: clamp(2.6rem, 12vw, 5rem); white-space: normal; }
+}
+
+/* ============================================================
+   CORERUN — /usr/games/corerun
+   The offline game as the machine's last screen. Canvas draws
+   the world; the chrome around it is the same monitor bezel
+   every other display on this board wears.
+   ============================================================ */
+.crun-wrap { margin-top: clamp(56px, 9vh, 110px); }
+
+/* no bezel — the game sits straight on the board */
+.crun-stage {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: clamp(220px, 34vh, 320px);
+  background: var(--obsidian-2);
+  cursor: pointer;
+  outline-offset: -3px;
+  /* no double-tap zoom, no rubber-band scroll while jumping */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.crun-stage:focus-visible { outline: 2px solid var(--red); }
+.crun-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+/* the two paused states — DOM, not canvas, so the type is the
+   site's own and a screen reader can reach it */
+.crun-overlay {
+  position: absolute; inset: 0; z-index: 3;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 7px; padding: 20px;
+  text-align: center;
+  pointer-events: none;
+}
+/* idle is a title card, so it gets a scrim */
+.crun-idle {
+  background: rgba(20, 20, 22, 0.74);
+  background-image: var(--grain); background-size: 96px;
+}
+/* death is only a pause — the frozen frame stays fully visible,
+   the type carries its own hard shadow instead */
+.crun-dead { background: none; }
+.crun-dead > * { text-shadow: 2px 2px 0 rgba(20, 20, 22, 0.9); }
+
+.crun-cmd {
+  font-size: 12px; font-weight: 700; letter-spacing: 0.12em;
+  color: var(--amber);
+}
+.crun-copy {
+  font-size: 12.5px; color: var(--bone-dim);
+  max-width: 42ch;
+}
+.crun-prompt {
+  margin-top: 6px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.16em;
+  color: var(--bone);
+  animation: crun-blink 1.1s steps(1) infinite;
+}
+@keyframes crun-blink { 0%, 55% { opacity: 1; } 56%, 100% { opacity: 0.22; } }
+
+.crun-halt {
+  font-family: var(--font-serif);
+  font-size: clamp(1.3rem, 3.4vw, 2rem);
+  color: var(--red);
+}
+
+/* the loop arrow: the only thing under PROCESS TERMINATED */
+.crun-replay {
+  width: clamp(38px, 5vw, 52px); height: auto;
+  margin-top: 14px;
+  color: var(--bone);
+  filter: drop-shadow(2px 2px 0 rgba(20, 20, 22, 0.9));
+  animation: crun-replay-pulse 1.6s steps(2, end) infinite;
+}
+@keyframes crun-replay-pulse {
+  0%, 100% { color: var(--bone); }
+  50% { color: var(--amber); }
+}
+
+/* the legend doubles as the board's sign-off line */
+.crun-legend {
+  margin-top: 16px; padding-top: 14px;
+  border-top: 2px dashed var(--line-soft);
+  display: flex; flex-wrap: wrap; gap: 10px 30px;
+  font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--bone-faint);
+}
+.crun-leg b {
+  font-weight: 800; color: var(--bone-dim);
+  margin-right: 7px;
+}
+.crun-leg-note { margin-left: auto; color: var(--bone-faint); opacity: 0.75; }
+
+.crun-sr {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* the résumé, relocated under the channel stack */
+.channel-resume {
+  display: flex; align-items: center; flex-wrap: wrap;
+  gap: 20px; margin-top: 26px;
+}
+.channel-resume-link {
+  font-size: 12px; font-weight: 600; color: var(--red-deep);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s steps(3, end);
+}
+.channel-resume-link:hover { border-color: var(--red-deep); }
+
+@media (max-width: 640px) {
+  .crun-stage { height: clamp(180px, 26vh, 240px); }
+  .crun-legend { gap: 8px 20px; font-size: 9px; }
+  .crun-leg-note { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .crun-prompt, .crun-replay { animation: none; }
+}
+
+/* ============================================================
+   STATION SCENES — five live machines
+   Every panel in /var/builds runs a continuous loop for as long
+   as it is on screen and parks completely when it isn't: the
+   observer in Scenes.jsx toggles `.live`, and every animation
+   below is paused until it lands. Motion is stepped, never
+   eased — these are screens refreshing, not objects moving.
+   ============================================================ */
+
+/* transform-origin in viewBox coordinates, not per-element boxes,
+   so a sweep can pivot around a point in the scene */
+.scene * { transform-box: view-box; }
+
+
+/* ── shared ─────────────────────────────────────────────── */
+.sc-sweep { animation: sc-sweep 9s steps(30, end) infinite; }
+@keyframes sc-sweep {
+  0% { transform: translateY(0); }
+  22% { transform: translateY(560px); }
+  100% { transform: translateY(560px); }
+}
+
+.sc-noise { animation: sc-twinkle 3.2s steps(2, end) infinite; }
+.sc-noise.n1 { animation-duration: 4.1s; animation-delay: -0.7s; }
+.sc-noise.n2 { animation-duration: 2.6s; animation-delay: -1.4s; }
+.sc-noise.n3 { animation-duration: 5.3s; animation-delay: -2.1s; }
+@keyframes sc-twinkle { 0%, 100% { opacity: 0.05; } 50% { opacity: 0.35; } }
+
+/* marching ants — the tell that a trace is carrying something */
+.sc-ants { animation: sc-ants 1s steps(6, end) infinite; }
+.sc-ants.a2 { animation-delay: -0.33s; }
+.sc-ants.a3 { animation-delay: -0.66s; }
+@keyframes sc-ants { to { stroke-dashoffset: -24; } }
+
+/* a readout that cycles three states */
+.sc-cycle .cy { opacity: 0; animation: sc-cycle 4.5s steps(1, end) infinite; }
+.sc-cycle .cy.c1 { animation-delay: 1.5s; }
+.sc-cycle .cy.c2 { animation-delay: 3s; }
+@keyframes sc-cycle {
+  0%, 33.3% { opacity: 1; }
+  33.4%, 100% { opacity: 0; }
+}
+
+.sc-live-dot { animation: sc-blink 1.4s steps(1, end) infinite; }
+@keyframes sc-blink { 0%, 55% { opacity: 1; } 56%, 100% { opacity: 0.15; } }
+
+/* a bar that fills, holds, then snaps back to empty. These two
+   scale about their OWN left edge, so they opt back into fill-box —
+   under the scene-wide view-box rule `left` would mean the left of
+   the whole panel and the bar would slide instead of grow. */
+.sc-meter, .sc-solve { transform-box: fill-box; transform-origin: left center; }
+.sc-meter { animation: sc-meter 4.5s steps(12, end) infinite; }
+@keyframes sc-meter {
+  0% { transform: scaleX(0); }
+  62% { transform: scaleX(1); }
+  92% { transform: scaleX(1); }
+  93%, 100% { transform: scaleX(0); }
+}
+
+/* ── 01 · the midpoint solver ───────────────────────────── */
+.sc-map .sc-tier { animation: sc-tier 7s steps(2, end) infinite; }
+.sc-map .sc-tier.t1 { animation-delay: -1.2s; }
+.sc-map .sc-tier.t2 { animation-delay: -2.4s; }
+.sc-map .sc-tier.t3 { animation-delay: -3.6s; }
+@keyframes sc-tier { 0%, 100% { opacity: 1; } 50% { opacity: 0.93; } }
+
+.sc-blip-ring { animation: sc-ring-pulse 2.4s steps(4, end) infinite; }
+.sc-blip.b2 .sc-blip-ring { animation-delay: -0.8s; }
+.sc-blip.b3 .sc-blip-ring { animation-delay: -1.6s; }
+@keyframes sc-ring-pulse {
+  0% { opacity: 0.7; }
+  60% { opacity: 0.1; }
+  100% { opacity: 0.7; }
+}
+
+.sc-cross { animation: sc-cross 3s steps(3, end) infinite; }
+@keyframes sc-cross { 0%, 100% { opacity: 1; } 50% { opacity: 0.72; } }
+
+.sc-solve { animation: sc-solve 4.5s steps(9, end) infinite; }
+@keyframes sc-solve {
+  0% { transform: scaleX(0.1); }
+  70% { transform: scaleX(1); }
+  71%, 100% { transform: scaleX(0.1); }
+}
+
+/* ── 02 · the live board ────────────────────────────────── */
+.sc-feed { animation: sc-feed 4.8s steps(4, end) infinite; }
+@keyframes sc-feed { to { transform: translateY(-112px); } }  /* exactly 4 rows */
+
+.sc-pulse { animation: sc-pulse-run 1.2s steps(5, end) infinite; }
+@keyframes sc-pulse-run { to { stroke-dashoffset: -48; } }
+
+/* ── 03 · the parser ────────────────────────────────────── */
+/* each token is pulled off the line and clocked into the unit */
+.sc-token { opacity: 0; animation: sc-token 4.5s steps(6, end) infinite; }
+.sc-token.k2 { animation-delay: 0.5s; }
+.sc-token.k3 { animation-delay: 1s; }
+@keyframes sc-token {
+  0% { opacity: 0; transform: translate(-60px, -22px); }
+  8% { opacity: 1; transform: translate(-60px, -22px); }
+  30% { opacity: 1; transform: translate(0, 0); }
+  42% { opacity: 1; transform: translate(112px, 44px); }
+  50% { opacity: 0; transform: translate(112px, 44px); }
+  100% { opacity: 0; transform: translate(112px, 44px); }
+}
+
+/* the register clocks through its cells, one per beat */
+.sc-reg { opacity: 0.12; animation: sc-reg 1.8s steps(1, end) infinite; }
+.sc-reg.g1 { animation-delay: 0.2s; }
+.sc-reg.g2 { animation-delay: 0.4s; }
+.sc-reg.g3 { animation-delay: 0.6s; }
+.sc-reg.g4 { animation-delay: 0.8s; }
+.sc-reg.g5 { animation-delay: 1s; }
+.sc-reg.g6 { animation-delay: 1.2s; }
+.sc-reg.g7 { animation-delay: 1.4s; }
+.sc-reg.g8 { animation-delay: 1.6s; }
+@keyframes sc-reg { 0%, 11% { opacity: 1; } 12%, 100% { opacity: 0.12; } }
+
+/* jobs drop out of the queue in rotation */
+.sc-card { opacity: 0.25; animation: sc-card 4.5s steps(4, end) infinite; }
+.sc-card.c2 { animation-delay: 1.5s; }
+.sc-card.c3 { animation-delay: 3s; }
+@keyframes sc-card {
+  0% { opacity: 0.25; transform: translateY(14px); }
+  10% { opacity: 1; transform: translateY(0); }
+  33% { opacity: 1; transform: translateY(0); }
+  40%, 100% { opacity: 0.25; transform: translateY(0); }
+}
+
+/* ── 04 · the fair-food radar ───────────────────────────── */
+.sc-venue { }
+
+.sc-puff { opacity: 0; animation: sc-puff 2.4s steps(6, end) infinite; }
+.sc-puff.p1 { animation-delay: -0.8s; }
+.sc-puff.p2 { animation-delay: -1.6s; }
+@keyframes sc-puff {
+  0% { opacity: 0; transform: translateY(0); }
+  25% { opacity: 0.8; }
+  100% { opacity: 0; transform: translateY(-28px); }
+}
+
+/* ── 05 · this machine ──────────────────────────────────── */
+/* the source types itself in, line by line, then the window
+   refreshes and it does it all again */
+.sc-line { transform-origin: 136px center; animation: sc-type 8s steps(8, end) infinite; }
+.sc-line.l1 { animation-delay: 0.4s; }
+.sc-line.l2 { animation-delay: 0.8s; }
+.sc-line.l3 { animation-delay: 1.2s; }
+.sc-line.l4 { animation-delay: 1.6s; }
+.sc-line.l5 { animation-delay: 2s; }
+@keyframes sc-type {
+  0% { transform: scaleX(0); }
+  6% { transform: scaleX(1); }
+  88% { transform: scaleX(1); }
+  90%, 100% { transform: scaleX(0); }
+}
+.sc-caret { animation: sc-blink 1s steps(1, end) infinite; }
+.sc-antenna { animation: sc-antenna 2.2s steps(2, end) infinite; }
+@keyframes sc-antenna { 0%, 100% { fill: var(--bone); } 50% { fill: var(--amber); } }
+.sc-bot { animation: sc-bot-bob 2.4s steps(2, end) infinite; }
+@keyframes sc-bot-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+
+/* ── the machine stands down ────────────────────────────── */
+/* compositor unloaded, or the visitor asked for stillness: the
+   scenes hold their most legible frame instead of looping */
+@media (prefers-reduced-motion: reduce) {
+  .scene [class*='sc-'] { animation: none !important; }
+  .scene .sc-token, .scene .sc-card, .scene .sc-puff,
+  .scene .sc-line, .scene .sc-cycle .cy.c0 { opacity: 1; transform: none; }
+  .scene .sc-cycle .cy.c1, .scene .sc-cycle .cy.c2 { opacity: 0; }
+  .scene .sc-reg { opacity: 1; }
+  .scene .sc-meter, .scene .sc-solve { transform: scaleX(1); }
+  .scene .sc-sweep { opacity: 0; }
+}
+html[data-ui='off'] .scene [class*='sc-'] { animation: none !important; }
+html[data-ui='off'] .scene .sc-sweep { display: none; }
+
+/* ── the live gate, stated last and hard ──────────────────
+   Every rule above sets `animation:` in shorthand form, and the
+   shorthand resets animation-play-state to `running` — so the
+   gate cannot be a plain earlier declaration or the shorthands
+   silently reopen it. This is the invariant: a panel that is not
+   on screen does not animate, full stop. */
+.scene:not(.live) [class*='sc-'] { animation-play-state: paused !important; }
+
+
+/* the transit matrix: three unequal commutes settling level —
+   the fairness search, made literal */
+.sc-bar { transform-box: fill-box; transform-origin: left center; animation: sc-bar 5s steps(10, end) infinite; }
+.sc-bar.q0 { --to: 0.6; }
+.sc-bar.q1 { --to: 1.2; }
+.sc-bar.q2 { --to: 0.75; }
+@keyframes sc-bar {
+  0%, 12% { transform: scaleX(1); }
+  55%, 88% { transform: scaleX(var(--to)); }
+  100% { transform: scaleX(1); }
+}
+
+/* ============================================================
+   CUSTOM CURSOR — the reticle canvas sits above everything and
+   catches nothing. The native cursor is only hidden once the
+   component has actually mounted and confirmed a fine pointer,
+   so a JS failure, a touch device or a blocked script can never
+   leave someone with no pointer at all.
+   ============================================================ */
+.cursor-canvas {
+  position: fixed; inset: 0;
+  z-index: 100000;
+  pointer-events: none;
+}
+html.cursor-custom,
+html.cursor-custom * { cursor: none !important; }
+
+/* ============================================================
+   PAGE FIELD — one fixed pixel field for the entire site.
+
+   It sits ABOVE the section grounds so `screen` can blend it
+   against whatever colour that board is painted, and BELOW all
+   content and the dither bands. Being fixed and screen-space,
+   the pattern is continuous down the whole page: the opaque
+   bands now simply pass over it instead of cutting it.
+   ============================================================ */
+.page-field {
+  position: fixed; inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  /* The blend has to live HERE, not on the canvas layer inside.
+     This element already forms a stacking context (fixed + z-index),
+     which isolates any blend set on a child to its own empty
+     interior — so `screen` on the inner layer had nothing to lighten
+     and the field was invisible against the dark boards. On the field
+     itself it blends against the page behind it, as intended. */
+  mix-blend-mode: screen;
+  transition: opacity 0.45s steps(5, end);
+}
+.page-field .pixel-blast-bg { mix-blend-mode: normal; opacity: 0.42; }
+/* the hero keeps the field off the portrait, as its own field did */
+.page-field.at-boot .pixel-blast-bg {
+  -webkit-mask-image: linear-gradient(to right, #000 0%, #000 42%, transparent 58%);
+  mask-image: linear-gradient(to right, #000 0%, #000 42%, transparent 58%);
+}
+
+/* everything the field must not cover */
+.board > .wrap { position: relative; z-index: 2; }
+.dither-edge { z-index: 3; }
+
+.particle-face { z-index: 2; }
+.boot-center { z-index: 3; }

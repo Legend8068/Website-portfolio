@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AYUSH.OS — Ayush Singh</title>
+  <meta name="description" content="Ayush Singh — Computer Science & Design student at SUTD, Singapore. A portfolio built as a pixel operating system: boot the machine, dive the kernel, probe the memory map, download your own session log." />
+
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="alternate icon" href="/favicon.svg" />
+  <link rel="apple-touch-icon" href="/favicon.svg" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fragment+Mono:ital@0;1&display=swap" rel="stylesheet">
+
+  <!-- the machine's own black, before the stylesheet lands -->
+  <style>html { background: #18181A; }</style>
+</head>
+<body>
+  <!-- The particle face IS the loader: it streams in, runs a lap of the
+       bus circuit and forms, then hands the page over. `booting` holds
+       the rest of the hero back until it lands. ParticleFace.jsx clears
+       it; the timeout below is the hard safety net so a WebGL failure,
+       a missing texture or a blocked script can never trap a visitor
+       behind an empty screen. -->
+  <script>
+    (function () {
+      try {
+        var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (reduced) { window.PRELOADER_DONE = true; return; }
+        document.documentElement.classList.add('booting');
+        setTimeout(function () {
+          if (window.PRELOADER_DONE) return;
+          window.PRELOADER_DONE = true;
+          document.documentElement.classList.remove('booting');
+          window.dispatchEvent(new Event('preloader-done'));
+        }, 8000);
+      } catch (e) {
+        window.PRELOADER_DONE = true;
+        document.documentElement.classList.remove('booting');
+      }
+    })();
+  </script>
+
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
