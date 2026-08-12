@@ -132,7 +132,6 @@ export function Boot() {
 
       <div className="hero-rail top">
         <span><i className="pulse-dot" />1.35°N · 103.81°E · SINGAPORE</span>
-        <span>EST. MMXXVI</span>
       </div>
 
       <div className="boot-stage">
