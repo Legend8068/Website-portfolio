@@ -3288,6 +3288,85 @@ html[data-ui='off'] .particle-face { display: none; }
   40%, 100% { opacity: 0.25; transform: translateY(0); }
 }
 
+/* ── 03 · the distribution shift ────────────────────────────
+   One 6s bar for the whole station, so every readout is telling
+   the same story at the same instant: the test sample walks two
+   bins clear of train (sc-drift), the probe measures the gap
+   (sc-probe / sc-delta), the adversarial AUC falls to chance as
+   the split is made shift-aware (sc-auc, and the cycled readout
+   retimed to 6s below), and the F1 ladder climbs behind it.
+   Steps, never eases — this is a chart refreshing, not a thing
+   moving. */
+.sc-drift { animation: sc-drift 6s steps(8, end) infinite; }
+@keyframes sc-drift {
+  0%, 10% { transform: translateX(0); }
+  32%, 74% { transform: translateX(80px); }   /* == DRIFT in Scenes.jsx */
+  92%, 100% { transform: translateX(0); }
+}
+
+.sc-probe { animation: sc-probe 6s steps(8, end) infinite; }
+@keyframes sc-probe {
+  0%, 32% { opacity: 0; transform: translateX(0); }
+  33% { opacity: 1; transform: translateX(0); }
+  62% { opacity: 1; transform: translateX(320px); }
+  63%, 100% { opacity: 0; transform: translateX(320px); }
+}
+
+.sc-delta { opacity: 0; animation: sc-delta 6s steps(4, end) infinite; }
+@keyframes sc-delta {
+  0%, 34% { opacity: 0; }
+  38%, 74% { opacity: 1; }
+  76%, 100% { opacity: 0; }
+}
+
+/* the validator loses its edge: 0.91 → 0.74 → 0.52 of a 0.91 bar */
+.sc-auc { transform-box: fill-box; transform-origin: left center; animation: sc-auc 6s steps(6, end) infinite; }
+@keyframes sc-auc {
+  0%, 30% { transform: scaleX(1); }
+  36%, 63% { transform: scaleX(0.81); }
+  69%, 100% { transform: scaleX(0.57); }
+}
+
+/* …and its guesses go from confident to coin-flips */
+.sc-flip { animation: sc-flip 2.4s steps(2, end) infinite; }
+.sc-flip.f1 { animation-delay: -0.4s; }
+.sc-flip.f2 { animation-delay: -0.8s; }
+.sc-flip.f3 { animation-delay: -1.2s; }
+.sc-flip.f4 { animation-delay: -1.6s; }
+.sc-flip.f5 { animation-delay: -2s; }
+@keyframes sc-flip { 0%, 100% { fill: var(--red); } 50% { fill: var(--trace); } }
+
+/* The score ladder, one rung at a time. The stagger is written into
+   each rung's own keyframes rather than an animation-delay, so all
+   three reset on the SAME frame — delays left the last rung standing
+   full for half a second after the first two had already emptied. The
+   rungs are also cued to the story around them: the last one lands at
+   ~4s, exactly as the validator falls to chance and the drift closes. */
+.sc-step { transform-box: fill-box; transform-origin: left center; }
+.sc-step.s1 { animation: sc-step-1 6s steps(8, end) infinite; }
+.sc-step.s2 { animation: sc-step-2 6s steps(8, end) infinite; }
+.sc-step.s3 { animation: sc-step-3 6s steps(8, end) infinite; }
+@keyframes sc-step-1 {
+  0%, 4% { transform: scaleX(0); }
+  12%, 92% { transform: scaleX(1); }
+  94%, 100% { transform: scaleX(0); }
+}
+@keyframes sc-step-2 {
+  0%, 34% { transform: scaleX(0); }
+  42%, 92% { transform: scaleX(1); }
+  94%, 100% { transform: scaleX(0); }
+}
+@keyframes sc-step-3 {
+  0%, 66% { transform: scaleX(0); }
+  74%, 92% { transform: scaleX(1); }
+  94%, 100% { transform: scaleX(0); }
+}
+
+/* the shared 3-state readout, retimed onto this station's 6s bar */
+.sc-shift .sc-cycle .cy { animation-duration: 6s; }
+.sc-shift .sc-cycle .cy.c1 { animation-delay: 2s; }
+.sc-shift .sc-cycle .cy.c2 { animation-delay: 4s; }
+
 /* ── 04 · the fair-food radar ───────────────────────────── */
 .sc-venue { }
 
@@ -3330,7 +3409,12 @@ html[data-ui='off'] .particle-face { display: none; }
   .scene .sc-line, .scene .sc-cycle .cy.c0 { opacity: 1; transform: none; }
   .scene .sc-cycle .cy.c1, .scene .sc-cycle .cy.c2 { opacity: 0; }
   .scene .sc-reg { opacity: 1; }
-  .scene .sc-meter, .scene .sc-solve { transform: scaleX(1); }
+  .scene .sc-meter, .scene .sc-solve, .scene .sc-step, .scene .sc-auc { transform: scaleX(1); }
+  /* the shift station holds its most legible frame: samples apart,
+     gap measured, probe parked */
+  .scene .sc-drift { transform: translateX(80px); }
+  .scene .sc-delta { opacity: 1; }
+  .scene .sc-probe { opacity: 0; }
   .scene .sc-sweep { opacity: 0; }
 }
 html[data-ui='off'] .scene [class*='sc-'] { animation: none !important; }

@@ -428,6 +428,137 @@ export function ParserScene() {
 }
 
 /* ============================================================
+   03 · DETECTING GENAI TEXT — the distribution shift
+   The one scene here that animates a MEASUREMENT rather than a
+   machine. Train and test are drawn on one axis; the test sample
+   drifts two bins clear of train, a probe sweeps the gap, the
+   adversarial validator's AUC falls from 0.91 to chance as the
+   split is made shift-aware, and the Macro-F1 ladder climbs
+   0.66 → 0.74 → 0.80242. Then the drift comes back — because a
+   shift is a property of the data, not a bug you fix once.
+   ============================================================ */
+
+/* one bell, drawn twice: identical heights, so the only thing
+   separating the two samples on screen is the drift itself */
+const HIST = [16, 40, 72, 96, 80, 48, 24, 8]
+const HIST_X0 = 56          // first bin's left edge
+const HIST_PITCH = 40
+const HIST_BASE = 280       // the axis the bars stand on
+const DRIFT = 80            // two bins — matches sc-drift in styles.css
+
+/* the F1 ladder: where the score sat at each stage of the story */
+const F1_ROWS = [
+  { k: 'PROVIDED FEATURES', v: '0.66', w: 80, tone: 'var(--trace)' },
+  { k: 'OWN FEATURES', v: '0.74', w: 176, tone: 'var(--red)' },
+  { k: 'SHIFT-AWARE SPLIT', v: '0.80242', w: 256, tone: 'var(--amber)' },
+]
+
+export function ShiftScene() {
+  return (
+    <Scene name="sc-shift" label="Two sampled distributions drifting apart while an adversarial validator and a Macro-F1 ladder respond">
+      <Backplane seed={17} />
+
+      {/* ── the two samples on one axis ── */}
+      <Panel x={32} y={40} w={368} h={272} fill="var(--slate-deep)" edge="var(--trace)">
+        <Mono x={56} y={72} fontWeight="600" fontSize="10.5" letterSpacing="2.4" fill="var(--bone-dim)">
+          TWO SAMPLES · ONE CORPUS
+        </Mono>
+
+        {/* legend */}
+        <rect x={56} y={86} width="12" height="12" fill="var(--trace)" />
+        <Mono x={76} y={97} fontSize="9.5" letterSpacing="1.4" fill="var(--bone-faint)">TRAIN · 20,000</Mono>
+        <rect x={216} y={86} width="12" height="12" fill="var(--red)" />
+        <Mono x={236} y={97} fontSize="9.5" letterSpacing="1.4" fill="var(--bone-faint)">TEST · 5,000</Mono>
+
+        <clipPath id="shiftClip"><rect x={48} y={104} width="336" height="178" /></clipPath>
+
+        {/* train: the reference sample, fixed */}
+        <g clipPath="url(#shiftClip)">
+          {HIST.map((h, i) => (
+            <rect key={'tr' + i} x={HIST_X0 + i * HIST_PITCH} y={HIST_BASE - h}
+              width="24" height={h} fill="var(--trace)" />
+          ))}
+
+          {/* test: the same bell, walking off its bins */}
+          <g className="sc-drift">
+            {HIST.map((h, i) => (
+              <rect key={'te' + i} x={HIST_X0 + 6 + i * HIST_PITCH} y={HIST_BASE - h}
+                width="12" height={h} fill="var(--red)" />
+            ))}
+          </g>
+
+          {/* the probe that walks the axis looking for the gap */}
+          <g className="sc-probe">
+            <rect x={HIST_X0} y={104} width="2" height={HIST_BASE - 104} fill="var(--bone-dim)" />
+            <rect x={HIST_X0 - 3} y={104} width="8" height="8" fill="var(--bone)" />
+          </g>
+        </g>
+
+        {/* the axis */}
+        <rect x={48} y={HIST_BASE} width="336" height="2" fill="var(--slate-3)" />
+
+        {/* the measured gap, only drawn while the samples are apart */}
+        <g className="sc-delta">
+          <rect x={188} y={292} width={DRIFT} height="2" fill="var(--amber)" />
+          <rect x={188} y={286} width="2" height="14" fill="var(--amber)" />
+          <rect x={188 + DRIFT - 2} y={286} width="2" height="14" fill="var(--amber)" />
+          <Mono x={188 + DRIFT + 12} y={299} fontWeight="700" fontSize="10.5" letterSpacing="1.6" fill="var(--amber)">
+            Δ SHIFT
+          </Mono>
+        </g>
+      </Panel>
+
+      {/* ── the adversarial validator ── */}
+      <Panel x={416} y={40} w={192} h={272} fill="var(--slate-deep)">
+        <Mono x={440} y={72} fontWeight="600" fontSize="10.5" letterSpacing="2.4" fill="var(--bone-dim)">ADVERSARIAL</Mono>
+        <Mono x={440} y={88} fontWeight="600" fontSize="10.5" letterSpacing="2.4" fill="var(--bone-dim)">VALIDATOR</Mono>
+
+        <Mono x={440} y={126} fontSize="9.5" letterSpacing="1.4" fill="var(--bone-faint)">TRAIN vs TEST · AUC</Mono>
+        <g className="sc-cycle">
+          <Mono className="cy c0" x={440} y={158} fontWeight="700" fontSize="22" fill="var(--red)">0.91</Mono>
+          <Mono className="cy c1" x={440} y={158} fontWeight="700" fontSize="22" fill="var(--amber)">0.74</Mono>
+          <Mono className="cy c2" x={440} y={158} fontWeight="700" fontSize="22" fill="var(--trace)">0.52</Mono>
+        </g>
+        <rect x={440} y={172} width="144" height="12" fill="var(--obsidian-2)" />
+        <rect className="sc-auc" x={440} y={172} width="144" height="12" fill="var(--red)" />
+        <Mono x={440} y={200} fontSize="9" letterSpacing="1.2" fill="var(--bone-faint)">0.50 = INDISTINGUISHABLE</Mono>
+
+        {/* the discriminator's guesses, flipping as it loses the plot */}
+        <Mono x={440} y={220} fontSize="9" letterSpacing="1.6" fill="var(--bone-faint)">GUESSES</Mono>
+        {Array.from({ length: 24 }).map((_, i) => (
+          <rect key={i} className={'sc-flip f' + (i % 6)}
+            x={440 + (i % 6) * 20} y={232 + Math.floor(i / 6) * 20}
+            width="12" height="12" fill="var(--red)" />
+        ))}
+      </Panel>
+
+      {/* ── what any of it was worth ── */}
+      <Panel x={32} y={328} w={576} h={120} fill="var(--slate)">
+        <Mono x={56} y={356} fontWeight="600" fontSize="10.5" letterSpacing="2.6" fill="var(--bone-dim)">MACRO-F1</Mono>
+        {F1_ROWS.map((r, i) => (
+          <g key={r.k}>
+            <Mono x={56} y={379 + i * 28} fontSize="10" letterSpacing="1.4" fill="var(--bone-faint)">{r.k}</Mono>
+            <rect x={200} y={368 + i * 28} width="320" height="14" fill="var(--obsidian-2)" />
+            <rect className={'sc-step s' + (i + 1)} x={200} y={368 + i * 28} width={r.w} height="14" fill={r.tone} />
+            <text x={584} y={380 + i * 28} textAnchor="end" fontFamily="Fragment Mono"
+              fontWeight={i === 2 ? '700' : '400'} fontSize={i === 2 ? '14' : '12.5'}
+              fill={i === 2 ? 'var(--amber)' : 'var(--bone-dim)'}>{r.v}</text>
+          </g>
+        ))}
+      </Panel>
+
+      <Mono x={32} y={470} fontSize="10" letterSpacing="2.4" fill="var(--bone-faint)">
+        THE MODEL WAS NEVER THE HARD PART
+      </Mono>
+      <Mono x={608} y={470} textAnchor="end" fontSize="10" letterSpacing="2" fill="var(--bone-faint)">
+        NO DEEP LEARNING
+      </Mono>
+      <Sweep />
+    </Scene>
+  )
+}
+
+/* ============================================================
    04 · MAKANMATES — the fair-food radar
    The same fairness maths as station 01, but shipped native, so
    the whole scene lives inside a handset. Iso-time rings pulse

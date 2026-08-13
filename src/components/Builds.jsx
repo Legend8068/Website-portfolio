@@ -3,7 +3,7 @@ import gsap from 'gsap'
 import { Reveal } from '../lib/util.jsx'
 import { SectionHeader, DebugChip } from './Machine.jsx'
 import { MonitorFrame } from './MonitorFrame.jsx'
-import { MapScene, BoardScene, ParserScene, MakanScene, MachineScene } from './Scenes.jsx'
+import { MapScene, BoardScene, ShiftScene, ParserScene, MakanScene, MachineScene } from './Scenes.jsx'
 import { bus, useSystem } from '../lib/systemBus.jsx'
 import { BUILDS, TECH_BY_ID, buildsUsing } from '../lib/registry.js'
 
@@ -129,6 +129,7 @@ function PixelReveal({ photo, photoFit, title, children }) {
 const DIORAMAS = {
   'sg-meethalfway': MapScene,
   'worldcup': BoardScene,
+  'genai-detect': ShiftScene,
   'taskbot': ParserScene,
   'makanmates': MakanScene,
   'ayush-os': MachineScene,
@@ -137,6 +138,7 @@ const DIORAMAS = {
 const BUILD_NOTES = {
   'sg-meethalfway': 'A geometric centre is unfair — it ignores that trains don’t run in straight lines. I weight every leg by real transit time from routing APIs, then search for the point that minimises the group’s worst commute.',
   'taskbot': 'Free-text dates are the hard part — “next fri”, “in 2 weeks”, “EOD”. I parse intent and time out of the message, then hand it to a persistent job queue so reminders survive restarts and time-zones.',
+  'genai-detect': 'The corpus is 62.5% machine-generated, so “always machine” scores 62.5% accuracy and catches zero humans — Macro-F1 is the only metric that notices. The rest was distribution shift: an adversarial validator that tries to tell train from test, and a split reweighted by whatever it latched onto.',
   'ayush-os': 'Everything here is hand-placed: no UI kit, no template. The cross-highlighting runs on data-attributes and static CSS so a hover costs zero React renders.',
   'worldcup': 'Three feeds disagree constantly — a goal lands in the score before it lands in the table. I reconcile them into one state and render from that, so nothing on screen contradicts itself mid-match.',
   'makanmates': 'The hard part is mobile latency and offline reliability. Transit lookups are slow, so results cache locally and the UI always has a recommendation ready on the spot.',
@@ -251,7 +253,7 @@ export function Builds() {
           kicker="SECTOR 04 · PROJECTS"
           title={<>Projects<span className="accent">.</span></>}
           sub="Deployed builds"
-          lede="Five things I’ve designed and shipped, each one starting with the problem it solves. Hover any technology tag and it lights up in Skills below."
+          lede="Six things I’ve designed and shipped, each one starting with the problem it solves. Hover any technology tag and it lights up in Skills below."
         />
         <FilterBar />
         <div className="project-list">
