@@ -146,6 +146,7 @@ export const MANIFEST = {
     { label: 'generative & systems programming', focus: 'sys' },
   ],
   availability: 'SWE / creative-engineering internships · S26+',
+  currently: 'Tutor @ MathVision · Director @ SUTD ROOT',
 }
 
 /* ── PANIC_REGISTERS — real skills masquerading as CPU state ── */
