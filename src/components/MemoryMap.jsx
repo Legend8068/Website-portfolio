@@ -4,9 +4,8 @@ import { SectionHeader } from './Machine.jsx'
 import { CommitGraph } from './Trace.jsx'
 import { MonitorFrame } from './MonitorFrame.jsx'
 import { CoreBot } from './CoreBot.jsx'
-import { warpTo } from './Warp.jsx'
-import { bus } from '../lib/systemBus.jsx'
-import { TECHS, BUILD_BY_SLUG, buildsUsing } from '../lib/registry.js'
+import { bus, useSystem } from '../lib/systemBus.jsx'
+import { TECHS, TECH_BY_ID, BUILDS, BUILD_BY_SLUG, buildsUsing } from '../lib/registry.js'
 
 /* ============================================================
    MEMORY MAP — the motherboard. Every technology is a chip
@@ -36,22 +35,22 @@ const CORE = { x: 600, y: 320, s: 84 }
 const ROUTE = {
   /* left bank — four above the core's row, four below */
   react:      { lane: 45.5, pin: 44.0 },
-  nextjs:     { lane: 44.0, pin: 45.6 },
-  typescript: { lane: 42.5, pin: 47.2 },
-  javascript: { lane: 41.0, pin: 48.8 },
-  python:     { lane: 41.0, pin: 51.2 },
-  java:       { lane: 42.5, pin: 52.8 },
-  nodejs:     { lane: 44.0, pin: 54.4 },
-  express:    { lane: 45.5, pin: 56.0 },
+  typescript: { lane: 44.0, pin: 45.6 },
+  javascript: { lane: 42.5, pin: 47.2 },
+  python:     { lane: 41.0, pin: 48.8 },
+  java:       { lane: 41.0, pin: 51.2 },
+  nodejs:     { lane: 42.5, pin: 52.8 },
+  numpy:      { lane: 44.0, pin: 54.4 },
+  pandas:     { lane: 45.5, pin: 56.0 },
   /* right bank — mirrored */
-  threejs:    { lane: 54.5, pin: 44.0 },
-  gsap:       { lane: 56.0, pin: 45.6 },
-  leaflet:    { lane: 57.5, pin: 47.2 },
-  'telegram-api': { lane: 59.0, pin: 48.8 },
-  firebase:   { lane: 59.0, pin: 51.2 },
-  sqlite:     { lane: 57.5, pin: 52.8 },
-  vite:       { lane: 56.0, pin: 54.4 },
-  git:        { lane: 54.5, pin: 56.0 },
+  aws:        { lane: 54.5, pin: 44.0 },
+  threejs:    { lane: 56.0, pin: 45.6 },
+  gsap:       { lane: 57.5, pin: 47.2 },
+  leaflet:    { lane: 59.0, pin: 48.8 },
+  'telegram-api': { lane: 59.0, pin: 51.2 },
+  firebase:   { lane: 57.5, pin: 52.8 },
+  sqlite:     { lane: 56.0, pin: 54.4 },
+  vite:       { lane: 54.5, pin: 56.0 },
 }
 
 /* orthogonal trace from a chip to its own socket pin: horizontal
@@ -60,7 +59,9 @@ const ROUTE = {
 function tracePath(t) {
   const px = (t.x / 100) * BOARD_W
   const py = (t.y / 100) * BOARD_H
-  const r = ROUTE[t.id]
+  /* a chip added to TECHS without a lane here used to take the whole
+     section down with it — now it just runs straight at the core */
+  const r = ROUTE[t.id] || { lane: t.x < 50 ? 45.5 : 54.5, pin: 50 }
   const lx = (r.lane / 100) * BOARD_W
   const pinY = (r.pin / 100) * BOARD_H
   const edge = px < CORE.x ? CORE.x - CORE.s / 2 : CORE.x + CORE.s / 2
@@ -71,24 +72,23 @@ function tracePath(t) {
   }
 }
 
-function Chip({ t, onHover }) {
+function Chip({ t, onHover, selected }) {
   const inBuilds = buildsUsing(t.id)
   return (
     <button
       type="button"
-      className="mem-chip"
+      className={'mem-chip' + (selected ? ' sel' : '')}
       data-tech-id={t.id}
       data-in-builds={inBuilds.join(' ')}
       style={{ left: t.x + '%', top: t.y + '%' }}
+      aria-pressed={selected}
       onMouseEnter={() => { bus.setTechHighlight(t.id); onHover(t) }}
       onMouseLeave={() => { bus.setTechHighlight(null); onHover(null) }}
       onFocus={() => { bus.setTechHighlight(t.id); onHover(t) }}
       onBlur={() => { bus.setTechHighlight(null); onHover(null) }}
-      onClick={() => {
-        bus.set({ buildFilter: t.id })
-        bus.log('FILTER_SET', t.id)
-        warpTo('#builds')
-      }}
+      /* no warp on click any more: picking a second chip would yank the
+         page out from under the board before you got to it */
+      onClick={() => bus.toggleTech(t.id)}
       aria-label={`${t.name} at address ${t.addr} — used in ${inBuilds.length} build${inBuilds.length === 1 ? '' : 's'}`}
     >
       <span className="chip-pins top" aria-hidden="true"><i /><i /><i /><i /></span>
@@ -137,6 +137,12 @@ function BigOStreams() {
 
 export function MemoryMap() {
   const [hovered, setHovered] = useState(null)
+  const sel = useSystem((s) => s.techFilter)
+  const selSet = new Set(sel)
+  /* OR semantics: a build survives if it uses ANY selected chip */
+  const matched = sel.length
+    ? BUILDS.filter((b) => b.uses.some((u) => selSet.has(u)))
+    : []
   const hoverLog = useRef({})
   const onHover = (t) => {
     setHovered(t)
@@ -158,7 +164,7 @@ export function MemoryMap() {
           kicker="SECTOR 05 · SKILLS"
           title={<>Skills<span className="accent">.</span></>}
           sub="Memory map"
-          lede="What I build with, laid out as a circuit board. Hover a chip to see which projects use it."
+          lede="What I build with, laid out as a circuit board. Hover a chip to see which projects use it, click to hold it lit, and stack as many as you want."
         />
 
         <Reveal className="mobo-wrap" delay={1}>
@@ -170,7 +176,7 @@ export function MemoryMap() {
             <CoreBot />
           </div>
 
-          <div className="mobo">
+          <div className={'mobo' + (sel.length ? ' has-sel' : '')}>
             {/* copper underlay: traces + socket */}
             <svg className="mobo-svg" viewBox={`0 0 ${BOARD_W} ${BOARD_H}`}
               preserveAspectRatio="none" shapeRendering="crispEdges" aria-hidden="true">
@@ -178,7 +184,8 @@ export function MemoryMap() {
                 const { d, via, via2 } = tracePath(t)
                 return (
                   <g key={t.id} className="mobo-trace-g" data-tech-id={t.id}>
-                    <path className="mobo-trace" data-tech-id={t.id} d={d}
+                    <path className={'mobo-trace' + (selSet.has(t.id) ? ' sel' : '')}
+                      data-tech-id={t.id} d={d}
                       fill="none" stroke="var(--copper-2)" strokeWidth="3" strokeDasharray="8 8" />
                     <rect x={via.x - 3} y={via.y - 3} width="6" height="6" fill="var(--trace-dim)" />
                     <rect x={via2.x - 3} y={via2.y - 3} width="6" height="6" fill="var(--trace-dim)" />
@@ -205,7 +212,9 @@ export function MemoryMap() {
             </svg>
 
             {/* the chips ride on top */}
-            {TECHS.map((t) => <Chip key={t.id} t={t} onHover={onHover} />)}
+            {TECHS.map((t) => (
+              <Chip key={t.id} t={t} onHover={onHover} selected={selSet.has(t.id)} />
+            ))}
           </div>
 
           {/* readout strip under the board */}
@@ -217,8 +226,26 @@ export function MemoryMap() {
                   linked: {buildsUsing(hovered.id).map((s) => BUILD_BY_SLUG[s].title).join(' · ') || 'core only'}
                 </span>
               </>
+            ) : sel.length ? (
+              <>
+                <b>SELECTED</b>{' '}
+                {sel.map((id) => (
+                  <button key={id} type="button" className="sel-chip"
+                    onClick={() => bus.toggleTech(id)}
+                    title={`Deselect ${TECH_BY_ID[id].name}`}>
+                    {TECH_BY_ID[id].name} <i aria-hidden="true">×</i>
+                  </button>
+                ))}{' '}
+                <span className="mobo-readout-builds">
+                  {matched.length} of {BUILDS.length} builds{' '}
+                  <a className="mobo-readout-jump" href="#builds">see them →</a>
+                </span>{' '}
+                <button type="button" className="sel-clear" onClick={() => bus.clearTechFilter()}>
+                  [ CLEAR ]
+                </button>
+              </>
             ) : (
-              <span className="mobo-readout-idle">hover a chip to probe it · click to filter the builds</span>
+              <span className="mobo-readout-idle">hover a chip to probe it · click to hold it lit · pick as many as you like</span>
             )}
           </div>
         </Reveal>

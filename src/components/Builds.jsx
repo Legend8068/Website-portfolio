@@ -5,7 +5,7 @@ import { SectionHeader, DebugChip } from './Machine.jsx'
 import { MonitorFrame } from './MonitorFrame.jsx'
 import { MapScene, BoardScene, ShiftScene, ParserScene, MakanScene, MachineScene } from './Scenes.jsx'
 import { bus, useSystem } from '../lib/systemBus.jsx'
-import { BUILDS, TECH_BY_ID, buildsUsing } from '../lib/registry.js'
+import { BUILDS, TECH_BY_ID } from '../lib/registry.js'
 
 /* ============================================================
    DEPLOYED BUILDS — /var/builds. Each project is a deployment
@@ -144,23 +144,21 @@ const BUILD_NOTES = {
   'makanmates': 'The hard part is mobile latency and offline reliability. Transit lookups are slow, so results cache locally and the UI always has a recommendation ready on the spot.',
 }
 
-function ModuleTag({ techId }) {
+function ModuleTag({ techId, selected }) {
   const t = TECH_BY_ID[techId]
   if (!t) return null
   return (
     <button
       type="button"
-      className="mod-chip"
+      className={'mod-chip' + (selected ? ' sel' : '')}
       data-tech-id={techId}
+      aria-pressed={selected}
       onMouseEnter={() => bus.setTechHighlight(techId)}
       onMouseLeave={() => bus.setTechHighlight(null)}
       onFocus={() => bus.setTechHighlight(techId)}
       onBlur={() => bus.setTechHighlight(null)}
-      onClick={() => {
-        bus.set({ buildFilter: techId })
-        bus.log('FILTER_SET', techId)
-      }}
-      title={`${t.name} @ ${t.addr} — click to filter`}
+      onClick={() => bus.toggleTech(techId)}
+      title={`${t.name} @ ${t.addr} — click to ${selected ? 'deselect' : 'select'}`}
     >
       {t.name} <i className="mod-addr">{t.addr}</i>
     </button>
@@ -168,14 +166,22 @@ function ModuleTag({ techId }) {
 }
 
 function FilterBar() {
-  const filter = useSystem((s) => s.buildFilter)
-  if (!filter) return null
-  const n = buildsUsing(filter).length
+  const sel = useSystem((s) => s.techFilter)
+  if (!sel.length) return null
+  const n = BUILDS.filter((b) => b.uses.some((u) => sel.includes(u))).length
   return (
     <div className="build-filter" role="status">
-      <span>FILTER: <b>{filter}</b> — {n}/{BUILDS.length} builds</span>
+      <span className="build-filter-k">FILTER</span>
+      {sel.map((id) => (
+        <button key={id} type="button" className="build-filter-pill"
+          onClick={() => bus.toggleTech(id)}
+          title={`Remove ${TECH_BY_ID[id]?.name || id} from the filter`}>
+          {id} <i aria-hidden="true">×</i>
+        </button>
+      ))}
+      <span className="build-filter-n">{n}/{BUILDS.length} builds</span>
       <button type="button" className="build-filter-clear"
-        onClick={() => { bus.set({ buildFilter: null }); bus.log('FILTER_SET', 'null') }}>
+        onClick={() => bus.clearTechFilter()}>
         [ CLEAR ]
       </button>
     </div>
@@ -183,10 +189,10 @@ function FilterBar() {
 }
 
 function BuildStation({ b, idx }) {
-  const filter = useSystem((s) => s.buildFilter)
+  const sel = useSystem((s) => s.techFilter)
   const seen = useRef(false)
   const Diorama = DIORAMAS[b.slug]
-  const filtered = filter && !b.uses.includes(filter)
+  const filtered = sel.length > 0 && !b.uses.some((u) => sel.includes(u))
   return (
     <Reveal as="article"
       className={'project build-station' + (idx % 2 ? ' rev' : '') + (filtered ? ' filtered-out' : '')}
@@ -220,7 +226,9 @@ function BuildStation({ b, idx }) {
         <div className="project-foot">
           <div className="mod-row">
             <span className="mod-row-k">LOADED MODULES</span>
-            {b.uses.map((u) => <ModuleTag key={u} techId={u} />)}
+            {b.uses.map((u) => (
+              <ModuleTag key={u} techId={u} selected={sel.includes(u)} />
+            ))}
           </div>
           <span className="state">{b.state}</span>
         </div>
@@ -243,7 +251,21 @@ function BuildStation({ b, idx }) {
   )
 }
 
+/* the table only mounts its first page of stations — the rest are
+   loaded on request, so a visitor who isn't reading projects scrolls
+   straight on to Skills instead of past three more screens of them */
+const SHOWN = 3
+
 export function Builds() {
+  const [expanded, setExpanded] = useState(false)
+  const sel = useSystem((s) => s.techFilter)
+  const filter = sel.length > 0
+  /* a filter is an explicit request to see every match, so it opens
+     the rest of the list on its own */
+  const open = expanded || filter
+  const rest = BUILDS.length - SHOWN
+  const visible = open ? BUILDS : BUILDS.slice(0, SHOWN)
+
   return (
     <section id="builds" className="board board-a builds-zone">
 
@@ -256,9 +278,37 @@ export function Builds() {
           lede="Six things I’ve designed and shipped, each one starting with the problem it solves. Hover any technology tag and it lights up in Skills below."
         />
         <FilterBar />
-        <div className="project-list">
-          {BUILDS.map((b, idx) => <BuildStation key={b.slug} b={b} idx={idx} />)}
+        <div className="project-list" id="build-list">
+          {visible.map((b, idx) => <BuildStation key={b.slug} b={b} idx={idx} />)}
         </div>
+        {rest > 0 && !filter && (
+          <div className="build-more">
+            <button
+              type="button"
+              className={'build-more-btn' + (expanded ? ' up' : '')}
+              aria-expanded={expanded}
+              aria-controls="build-list"
+              title={expanded ? 'Unmount the remaining builds' : `Mount ${rest} more builds`}
+              onClick={() => {
+                const next = !expanded
+                setExpanded(next)
+                bus.log('BUILDS', next ? 'mount remaining ' + rest : 'unmount remaining ' + rest)
+                if (!next) {
+                  document.getElementById('builds')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                }
+              }}
+            >
+              <span className="build-more-sr">
+                {expanded ? 'Unmount the remaining builds' : `Mount ${rest} more builds`}
+              </span>
+              {/* the machine's own chevron: hard mitred strokes, no curve */}
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 8.5 12 16.5 20 8.5" fill="none" stroke="currentColor"
+                  strokeWidth="2.6" strokeLinecap="square" strokeLinejoin="miter" />
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
     </section>
   )

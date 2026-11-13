@@ -981,9 +981,6 @@ export function CoreRun() {
         {phase === 'idle' && (
           <div className="crun-overlay crun-idle">
             <p className="crun-cmd">$ ./corerun</p>
-            <p className="crun-copy">
-              CoreBot is idling on the line. Something in memory is moving.
-            </p>
             <p className="crun-prompt">
               {touch ? '[ TAP TO EXECUTE ]' : '[ PRESS SPACE · ↑ · W TO EXECUTE ]'}
             </p>

@@ -43,14 +43,14 @@ function BootPrompt() {
   }, [])
 
   const exec = useCallback((raw) => {
-    const { lines: outLines, effects } = runCommand(raw, { ai: aiOn })
+    const { lines: outLines, effects } = runCommand(raw, { ai: aiOn, techFilter: bus.get().techFilter })
     if (raw.trim()) bus.log('CMD', raw.trim())
     let cleared = false
     for (const fx of effects) {
       if (fx.clear) { setLines([]); cleared = true }
       else if (fx.scroll) warpTo(fx.scroll)
       else if (fx.open) { bus.log('RESUME_OPEN', fx.open); window.open(fx.open, '_blank', 'noopener') }
-      else if (fx.filter !== undefined) { bus.set({ buildFilter: fx.filter }); bus.log('FILTER_SET', fx.filter || 'null') }
+      else if (fx.filter !== undefined) bus.setTechFilter(fx.filter)
       else if (fx.panic) bus.panic(fx.panic)
     }
     if (!cleared && outLines.length) setLines((prev) => [...prev, ...outLines].slice(-60))

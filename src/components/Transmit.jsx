@@ -52,6 +52,21 @@ function LogTailInner() {
 function SessionLogTail() {
   const [near, setNear] = useState(false)
   const hostRef = useRef(null)
+  /* The receipt opens in a tab the way the resume does, so it has to be a
+     real link rather than a button that fakes one: the PDF is built on
+     pointer-down / focus and the fresh blob URL is written straight onto
+     the anchor, so the click that follows is an ordinary navigation. */
+  const dlRef = useRef(null)
+  const urlRef = useRef(null)
+  const arm = () => {
+    const a = dlRef.current
+    if (!a) return
+    if (urlRef.current) URL.revokeObjectURL(urlRef.current)
+    urlRef.current = bus.receiptUrl()
+    a.href = urlRef.current
+  }
+  useEffect(() => () => { if (urlRef.current) URL.revokeObjectURL(urlRef.current) }, [])
+
   useEffect(() => {
     const el = hostRef.current
     if (!el) return
@@ -72,13 +87,24 @@ function SessionLogTail() {
         <div className="logtail-actions">
           <p className="logtail-note">
             This machine has been logging your visit — every command, every sector,
-            every chip you probed. Take the receipt: a printable PDF of the transcript,
+            every chip you probed. Open the receipt: a printable PDF of the transcript,
             with my contact details on it.
           </p>
-          <button type="button" className="cmd-btn logtail-dl" onClick={() => bus.downloadLog()}>
-            DOWNLOAD SESSION RECEIPT · PDF
+          <a
+            ref={dlRef}
+            className="cmd-btn logtail-dl"
+            href="#transmit"
+            target="_blank"
+            rel="noopener noreferrer"
+            onPointerEnter={arm}
+            onPointerDown={arm}
+            onFocus={arm}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') arm() }}
+            onClick={() => bus.log('DOWNLOAD', 'session receipt')}
+          >
+            OPEN SESSION RECEIPT · PDF
             <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v9m0 0 3.5-3.5M8 11 4.5 7.5M3 14h10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter"/></svg>
-          </button>
+          </a>
         </div>
       </div>
     </Reveal>

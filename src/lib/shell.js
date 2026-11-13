@@ -1,4 +1,4 @@
-import { TECHS, BUILDS, TECH_BY_ID, buildsUsing } from './registry.js'
+import { TECHS, BUILDS, TECH_BY_ID } from './registry.js'
 
 /* ============================================================
    SHELL — a pure command engine. runCommand() never touches the
@@ -8,7 +8,7 @@ import { TECHS, BUILDS, TECH_BY_ID, buildsUsing } from './registry.js'
 
    returns { lines: [{t:'cmd'|'out'|'err', s}], effects: [...] }
    effect types: { clear } | { scroll:'#id' } | { open:url }
-                 | { filter: techId|null } | { panic: reason }
+                 | { filter: techId[] } | { panic: reason }
    ============================================================ */
 
 function out(s) { return { t: 'out', s } }
@@ -20,7 +20,8 @@ const HELP = [
   out('  manifest     open /etc/ayush.manifest'),
   out('  projects     list deployed builds'),
   out('  stack        show the loaded modules'),
-  out('  stack <mod>  filter builds by module (e.g. stack react)'),
+  out('  stack <mod>  add a module to the filter (e.g. stack react)'),
+  out('  stack clear  drop every module from the filter'),
   out('  resume       open the résumé PDF'),
   out('  contact      open the transmission channel'),
   out('  sudo hire    (go on)'),
@@ -63,6 +64,8 @@ export function runCommand(raw, sys = {}) {
   const lc = cmd.toLowerCase()
   const lines = [{ t: 'cmd', s: cmd }]
   const effects = []
+  /* the selection the board is already holding, so `stack x` adds to it */
+  const current = Array.isArray(sys.techFilter) ? sys.techFilter : []
 
   if (!cmd) return { lines: [], effects }
 
@@ -100,6 +103,11 @@ export function runCommand(raw, sys = {}) {
     lines.push(...stackLines())
     return { lines, effects }
   }
+  if (lc === 'stack clear' || lc === 'stack none') {
+    lines.push(out('filter cleared'))
+    effects.push({ filter: [] })
+    return { lines, effects }
+  }
   if (lc.startsWith('stack ')) {
     const arg = lc.slice(6).trim().replace(/\s+/g, '-')
     // accept id or name (react, next.js → nextjs, three.js → threejs)
@@ -112,9 +120,10 @@ export function runCommand(raw, sys = {}) {
       lines.push(out('valid modules: ' + TECHS.map((t) => t.id).join(', ')))
       return { lines, effects }
     }
-    const n = buildsUsing(match.id).length
-    lines.push(out(`filter applied: ${match.id} — ${n} build${n === 1 ? '' : 's'} matched`))
-    effects.push({ filter: match.id }, { scroll: '#builds' })
+    const sel = current.includes(match.id) ? current : [...current, match.id]
+    const n = BUILDS.filter((b) => b.uses.some((u) => sel.includes(u))).length
+    lines.push(out(`filter: ${sel.join(' + ')} — ${n} build${n === 1 ? '' : 's'} matched`))
+    effects.push({ filter: sel }, { scroll: '#builds' })
     return { lines, effects }
   }
 

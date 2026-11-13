@@ -608,9 +608,9 @@ html[data-ui='off'] .pixel-blast-bg { display: none; }
 .tile-inner {
   position: absolute; inset: 0;
   display: flex; flex-direction: column; align-items: flex-start;
-  /* every card carries the running process's colour — the table reads
-     as one surface, and the featured tile is marked by its amber copy
-     rather than by a panel a shade off from its neighbours */
+  /* every card carries the running process's colour — every tile in
+     the table is the same panel, so the only difference between them
+     is the copy they hold */
   background: var(--board);
   background-image: var(--grain); background-size: 240px; background-blend-mode: multiply;
   border-radius: 0;
@@ -650,9 +650,6 @@ html[data-ui='off'] .pixel-blast-bg { display: none; }
   font-size: clamp(9px, 1vw, 11px); font-weight: 500; letter-spacing: 0.08em;
   text-transform: uppercase; color: var(--bone-dim); margin-top: 3px;
 }
-.proc-tile.featured .tile-role { color: var(--bone); }
-.proc-tile.featured .tile-org { color: var(--trace); }
-.proc-tile.featured .tile-icon { background: var(--slate); color: var(--amber); }
 /* The subtext is permanent copy now, not a hover payoff: it sits in the
    card's flow under the org line, always readable. */
 .tile-detail {
@@ -1839,10 +1836,6 @@ html[data-ai='off'] .hero-tagline .tag-noai { display: inline; color: var(--bone
   background-blend-mode: multiply;
 }
 
-.proc-tile.featured .tile-inner {
-  box-shadow: var(--lift-2);
-}
-
 /* ============================================================
    SIGNAL TRACES — strokes draw themselves in on scroll,
    commits bloom as blots, mist drifts over the night ridges.
@@ -1974,10 +1967,6 @@ html[data-ai='off'] .hero-tagline .tag-noai { display: inline; color: var(--bone
 .bigo, .fact, .terminal, .seal-frame, .letter, .debug-note {
   outline: 1px solid var(--deckle);
   outline-offset: -1px;
-}
-/* dimmer fibre rim where the stock sits on the night sheet */
-.proc-tile.featured .tile-inner {
-  outline-color: var(--deckle-dim);
 }
 /* focus rings must stay louder than the deckle */
 .terminal:focus-within, a:focus-visible + .tile-inner,
@@ -2312,6 +2301,18 @@ html[data-ui='off'] .mon-sweep { display: none; }
   font-size: 11px; letter-spacing: 0.1em; font-weight: 700;
   box-shadow: var(--lift-1);
 }
+.build-filter { flex-wrap: wrap; gap: 10px; }
+.build-filter-k { letter-spacing: 0.16em; }
+.build-filter-n { margin-left: 4px; }
+/* one removable pill per held chip */
+.build-filter-pill {
+  font-family: var(--font-sans); font-size: 10.5px; font-weight: 700;
+  letter-spacing: 0.06em;
+  background: var(--obsidian); color: var(--amber);
+  border: none; padding: 3px 8px; cursor: pointer;
+}
+.build-filter-pill i { font-style: normal; opacity: 0.6; margin-left: 4px; }
+.build-filter-pill:hover { background: var(--bone); color: var(--obsidian); }
 .build-filter-clear {
   font-family: var(--font-sans); font-size: 11px; font-weight: 700;
   background: var(--obsidian); color: var(--amber);
@@ -2319,6 +2320,47 @@ html[data-ui='off'] .mon-sweep { display: none; }
 }
 .build-filter-clear:hover { background: var(--bone); color: var(--obsidian); }
 .build-station { transition: opacity 0.3s var(--steps); }
+
+/* ── load-more: the build table mounts three stations and keeps the
+   rest unmounted, so the scroll runs on to SKILLS unless the visitor
+   asks for them. The control is the machine's own descent cue — a bare
+   amber chevron that bobs on the spot, nothing else. */
+.build-more {
+  display: flex; justify-content: center;
+  margin-top: clamp(40px, 7vh, 84px);
+}
+.build-more-btn {
+  display: grid; place-items: center;
+  width: 64px; height: 64px;
+  padding: 0; border: none; background: none;
+  color: var(--amber);
+  cursor: pointer;
+  /* no blur anywhere on this board — a hard 1-bit offset instead */
+  filter: drop-shadow(2px 3px 0 rgba(0, 0, 0, 0.55));
+  transition: color 0.2s var(--steps), transform 0.25s steps(3, end);
+}
+.build-more-btn svg {
+  width: 38px; height: 38px;
+  animation: cue-bob 1.6s steps(3, end) infinite;
+  transition: transform 0.25s steps(3, end);
+}
+.build-more-btn.up svg { transform: rotate(180deg); }
+.build-more-btn:hover { color: var(--red); transform: translateY(3px); }
+.build-more-btn.up:hover { transform: translateY(-3px); }
+.build-more-btn:active { color: var(--bone); }
+.build-more-btn:focus-visible {
+  outline: 1px solid var(--amber);
+  outline-offset: -1px;
+}
+/* a visitor who asked for stillness gets a still chevron */
+@media (prefers-reduced-motion: reduce) {
+  .build-more-btn svg { animation: none; }
+}
+.build-more-sr {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
 .build-station.filtered-out { opacity: 0.3; }
 .filter-stamp {
   display: none; position: absolute; top: 20px; right: 16px; z-index: 5;
@@ -2425,125 +2467,178 @@ html[data-ui='off'] .mon-sweep { display: none; }
 
 /* ── THE BUS: cross-highlight rules, one block per tech ────
    CSS cannot compare two attributes, so each tech id gets its
-   explicit rule set. Generated from registry.js — keep in sync. */
+   explicit rule set. Generated from registry.js — keep in sync.
+
+   Hover writes html[data-tech]; a held selection writes html[data-sel]
+   and a .sel class on the chip, trace and module tag it owns. The two
+   paint the same lit state, so a selected chip simply keeps looking
+   hovered. The one rule that stands down under a selection is the
+   build dimming, which would otherwise fight the filter. */
 @keyframes chip-alarm { 0%, 55% { opacity: 1; } 56%, 100% { opacity: 0.4; } }
 
-/* dim the builds that DON'T use the hovered tech */
-html[data-tech='react'] .build-station:not([data-uses~='react']),
-html[data-tech='nextjs'] .build-station:not([data-uses~='nextjs']),
-html[data-tech='typescript'] .build-station:not([data-uses~='typescript']),
-html[data-tech='javascript'] .build-station:not([data-uses~='javascript']),
-html[data-tech='python'] .build-station:not([data-uses~='python']),
-html[data-tech='java'] .build-station:not([data-uses~='java']),
-html[data-tech='nodejs'] .build-station:not([data-uses~='nodejs']),
-html[data-tech='express'] .build-station:not([data-uses~='express']),
-html[data-tech='threejs'] .build-station:not([data-uses~='threejs']),
-html[data-tech='gsap'] .build-station:not([data-uses~='gsap']),
-html[data-tech='leaflet'] .build-station:not([data-uses~='leaflet']),
-html[data-tech='telegram-api'] .build-station:not([data-uses~='telegram-api']),
-html[data-tech='firebase'] .build-station:not([data-uses~='firebase']),
-html[data-tech='sqlite'] .build-station:not([data-uses~='sqlite']),
-html[data-tech='vite'] .build-station:not([data-uses~='vite']),
-html[data-tech='git'] .build-station:not([data-uses~='git']) {
-  opacity: 0.35;
+/* dim the builds that DON'T use the hovered tech, unless a
+   selection is already deciding what is dim */
+html:not([data-sel])[data-tech='react'] .build-station:not([data-uses~='react']),
+html:not([data-sel])[data-tech='typescript'] .build-station:not([data-uses~='typescript']),
+html:not([data-sel])[data-tech='javascript'] .build-station:not([data-uses~='javascript']),
+html:not([data-sel])[data-tech='python'] .build-station:not([data-uses~='python']),
+html:not([data-sel])[data-tech='java'] .build-station:not([data-uses~='java']),
+html:not([data-sel])[data-tech='nodejs'] .build-station:not([data-uses~='nodejs']),
+html:not([data-sel])[data-tech='numpy'] .build-station:not([data-uses~='numpy']),
+html:not([data-sel])[data-tech='pandas'] .build-station:not([data-uses~='pandas']),
+html:not([data-sel])[data-tech='aws'] .build-station:not([data-uses~='aws']),
+html:not([data-sel])[data-tech='threejs'] .build-station:not([data-uses~='threejs']),
+html:not([data-sel])[data-tech='gsap'] .build-station:not([data-uses~='gsap']),
+html:not([data-sel])[data-tech='leaflet'] .build-station:not([data-uses~='leaflet']),
+html:not([data-sel])[data-tech='telegram-api'] .build-station:not([data-uses~='telegram-api']),
+html:not([data-sel])[data-tech='firebase'] .build-station:not([data-uses~='firebase']),
+html:not([data-sel])[data-tech='sqlite'] .build-station:not([data-uses~='sqlite']),
+html:not([data-sel])[data-tech='vite'] .build-station:not([data-uses~='vite']) {
+  opacity: 0.45;
+  filter: saturate(0.4);
 }
-/* dim the chips that AREN'T the hovered tech */
+
+/* dim every chip but the hovered one */
 html[data-tech='react'] .mem-chip:not([data-tech-id='react']),
-html[data-tech='nextjs'] .mem-chip:not([data-tech-id='nextjs']),
 html[data-tech='typescript'] .mem-chip:not([data-tech-id='typescript']),
 html[data-tech='javascript'] .mem-chip:not([data-tech-id='javascript']),
 html[data-tech='python'] .mem-chip:not([data-tech-id='python']),
 html[data-tech='java'] .mem-chip:not([data-tech-id='java']),
 html[data-tech='nodejs'] .mem-chip:not([data-tech-id='nodejs']),
-html[data-tech='express'] .mem-chip:not([data-tech-id='express']),
+html[data-tech='numpy'] .mem-chip:not([data-tech-id='numpy']),
+html[data-tech='pandas'] .mem-chip:not([data-tech-id='pandas']),
+html[data-tech='aws'] .mem-chip:not([data-tech-id='aws']),
 html[data-tech='threejs'] .mem-chip:not([data-tech-id='threejs']),
 html[data-tech='gsap'] .mem-chip:not([data-tech-id='gsap']),
 html[data-tech='leaflet'] .mem-chip:not([data-tech-id='leaflet']),
 html[data-tech='telegram-api'] .mem-chip:not([data-tech-id='telegram-api']),
 html[data-tech='firebase'] .mem-chip:not([data-tech-id='firebase']),
 html[data-tech='sqlite'] .mem-chip:not([data-tech-id='sqlite']),
-html[data-tech='vite'] .mem-chip:not([data-tech-id='vite']),
-html[data-tech='git'] .mem-chip:not([data-tech-id='git']) {
+html[data-tech='vite'] .mem-chip:not([data-tech-id='vite']) {
   opacity: 0.45;
 }
+
 /* light the matching trace */
 html[data-tech='react'] .mobo-trace[data-tech-id='react'],
-html[data-tech='nextjs'] .mobo-trace[data-tech-id='nextjs'],
 html[data-tech='typescript'] .mobo-trace[data-tech-id='typescript'],
 html[data-tech='javascript'] .mobo-trace[data-tech-id='javascript'],
 html[data-tech='python'] .mobo-trace[data-tech-id='python'],
 html[data-tech='java'] .mobo-trace[data-tech-id='java'],
 html[data-tech='nodejs'] .mobo-trace[data-tech-id='nodejs'],
-html[data-tech='express'] .mobo-trace[data-tech-id='express'],
+html[data-tech='numpy'] .mobo-trace[data-tech-id='numpy'],
+html[data-tech='pandas'] .mobo-trace[data-tech-id='pandas'],
+html[data-tech='aws'] .mobo-trace[data-tech-id='aws'],
 html[data-tech='threejs'] .mobo-trace[data-tech-id='threejs'],
 html[data-tech='gsap'] .mobo-trace[data-tech-id='gsap'],
 html[data-tech='leaflet'] .mobo-trace[data-tech-id='leaflet'],
 html[data-tech='telegram-api'] .mobo-trace[data-tech-id='telegram-api'],
 html[data-tech='firebase'] .mobo-trace[data-tech-id='firebase'],
 html[data-tech='sqlite'] .mobo-trace[data-tech-id='sqlite'],
-html[data-tech='vite'] .mobo-trace[data-tech-id='vite'],
-html[data-tech='git'] .mobo-trace[data-tech-id='git'] {
+html[data-tech='vite'] .mobo-trace[data-tech-id='vite'] {
   stroke: var(--red);
   animation: trace-flow 1.2s steps(16) infinite;
 }
+
 /* light the matching module tags up in the build stations */
 html[data-tech='react'] .mod-chip[data-tech-id='react'],
-html[data-tech='nextjs'] .mod-chip[data-tech-id='nextjs'],
 html[data-tech='typescript'] .mod-chip[data-tech-id='typescript'],
 html[data-tech='javascript'] .mod-chip[data-tech-id='javascript'],
 html[data-tech='python'] .mod-chip[data-tech-id='python'],
 html[data-tech='java'] .mod-chip[data-tech-id='java'],
 html[data-tech='nodejs'] .mod-chip[data-tech-id='nodejs'],
-html[data-tech='express'] .mod-chip[data-tech-id='express'],
+html[data-tech='numpy'] .mod-chip[data-tech-id='numpy'],
+html[data-tech='pandas'] .mod-chip[data-tech-id='pandas'],
+html[data-tech='aws'] .mod-chip[data-tech-id='aws'],
 html[data-tech='threejs'] .mod-chip[data-tech-id='threejs'],
 html[data-tech='gsap'] .mod-chip[data-tech-id='gsap'],
 html[data-tech='leaflet'] .mod-chip[data-tech-id='leaflet'],
 html[data-tech='telegram-api'] .mod-chip[data-tech-id='telegram-api'],
 html[data-tech='firebase'] .mod-chip[data-tech-id='firebase'],
 html[data-tech='sqlite'] .mod-chip[data-tech-id='sqlite'],
-html[data-tech='vite'] .mod-chip[data-tech-id='vite'],
-html[data-tech='git'] .mod-chip[data-tech-id='git'] {
+html[data-tech='vite'] .mod-chip[data-tech-id='vite'] {
   background: var(--red); color: var(--obsidian);
 }
+
 /* manifest focus rows light by the hovered tech's kind */
 html[data-tech='react'] .man-focus[data-focus='ui'],
-html[data-tech='nextjs'] .man-focus[data-focus='ui'],
 html[data-tech='typescript'] .man-focus[data-focus='sys'],
 html[data-tech='javascript'] .man-focus[data-focus='sys'],
 html[data-tech='python'] .man-focus[data-focus='sys'],
 html[data-tech='java'] .man-focus[data-focus='sys'],
 html[data-tech='nodejs'] .man-focus[data-focus='sys'],
-html[data-tech='express'] .man-focus[data-focus='sys'],
+html[data-tech='numpy'] .man-focus[data-focus='sys'],
+html[data-tech='pandas'] .man-focus[data-focus='sys'],
+html[data-tech='aws'] .man-focus[data-focus='sys'],
 html[data-tech='threejs'] .man-focus[data-focus='ui'],
 html[data-tech='gsap'] .man-focus[data-focus='ui'],
 html[data-tech='leaflet'] .man-focus[data-focus='sys'],
 html[data-tech='telegram-api'] .man-focus[data-focus='sys'],
 html[data-tech='firebase'] .man-focus[data-focus='sys'],
 html[data-tech='sqlite'] .man-focus[data-focus='sys'],
-html[data-tech='vite'] .man-focus[data-focus='sys'],
-html[data-tech='git'] .man-focus[data-focus='sys'] {
+html[data-tech='vite'] .man-focus[data-focus='sys'] {
   color: var(--amber);
 }
+
+/* ── held selection: the same lit state, minus the hover ───
+   These are class-driven rather than attribute-driven because a
+   selection is low frequency, so React can simply render it. */
+.mem-chip.sel .chip-body {
+  border-color: var(--red);
+  background: var(--slate-3);
+}
+.mem-chip.sel .chip-led {
+  background: var(--red);
+  animation: chip-alarm 0.5s steps(2, end) infinite;
+}
+.mobo-trace.sel {
+  stroke: var(--red);
+  animation: trace-flow 1.2s steps(16) infinite;
+}
+.mod-chip.sel { background: var(--red); color: var(--obsidian); }
+.mod-chip.sel .mod-addr { color: var(--obsidian); opacity: 0.7; }
+/* while chips are held, the unpicked ones step back — but hovering
+   one still brings it up, so the board stays probe-able */
+.mobo.has-sel .mem-chip:not(.sel):not(:hover):not(:focus-visible) { opacity: 0.4; }
+
+/* the selection pills in the board readout */
+.sel-chip, .sel-clear {
+  font-family: var(--font-sans); font-size: 10px; font-weight: 700;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  border: none; cursor: pointer; padding: 3px 7px; margin-right: 5px;
+  background: var(--red); color: var(--obsidian);
+}
+.sel-chip i { font-style: normal; opacity: 0.65; margin-left: 3px; }
+.sel-chip:hover { background: var(--bone); }
+.sel-clear { background: var(--slate-3); color: var(--bone); }
+.sel-clear:hover { background: var(--bone); color: var(--obsidian); }
+.mobo-readout-jump { color: var(--amber); text-decoration: none; }
+.mobo-readout-jump:hover { text-decoration: underline; }
+
 /* reverse direction: hovering a build lights its chips */
 html[data-build='sg-meethalfway'] .mem-chip:not([data-in-builds~='sg-meethalfway']),
 html[data-build='worldcup'] .mem-chip:not([data-in-builds~='worldcup']),
-html[data-build='taskbot'] .mem-chip:not([data-in-builds~='taskbot']),
+html[data-build='genai-detect'] .mem-chip:not([data-in-builds~='genai-detect']),
 html[data-build='makanmates'] .mem-chip:not([data-in-builds~='makanmates']),
-html[data-build='ayush-os'] .mem-chip:not([data-in-builds~='ayush-os']) {
+html[data-build='ayush-os'] .mem-chip:not([data-in-builds~='ayush-os']),
+html[data-build='taskbot'] .mem-chip:not([data-in-builds~='taskbot']) {
   opacity: 0.45;
 }
+
 html[data-build='sg-meethalfway'] .mem-chip[data-in-builds~='sg-meethalfway'] .chip-body,
 html[data-build='worldcup'] .mem-chip[data-in-builds~='worldcup'] .chip-body,
-html[data-build='taskbot'] .mem-chip[data-in-builds~='taskbot'] .chip-body,
+html[data-build='genai-detect'] .mem-chip[data-in-builds~='genai-detect'] .chip-body,
 html[data-build='makanmates'] .mem-chip[data-in-builds~='makanmates'] .chip-body,
-html[data-build='ayush-os'] .mem-chip[data-in-builds~='ayush-os'] .chip-body {
+html[data-build='ayush-os'] .mem-chip[data-in-builds~='ayush-os'] .chip-body,
+html[data-build='taskbot'] .mem-chip[data-in-builds~='taskbot'] .chip-body {
   border-color: var(--amber);
 }
+
 html[data-build='sg-meethalfway'] .mem-chip[data-in-builds~='sg-meethalfway'] .chip-led,
 html[data-build='worldcup'] .mem-chip[data-in-builds~='worldcup'] .chip-led,
-html[data-build='taskbot'] .mem-chip[data-in-builds~='taskbot'] .chip-led,
+html[data-build='genai-detect'] .mem-chip[data-in-builds~='genai-detect'] .chip-led,
 html[data-build='makanmates'] .mem-chip[data-in-builds~='makanmates'] .chip-led,
-html[data-build='ayush-os'] .mem-chip[data-in-builds~='ayush-os'] .chip-led {
+html[data-build='ayush-os'] .mem-chip[data-in-builds~='ayush-os'] .chip-led,
+html[data-build='taskbot'] .mem-chip[data-in-builds~='taskbot'] .chip-led {
   background: var(--red);
   animation: chip-alarm 0.5s steps(2, end) infinite;
 }
@@ -2831,33 +2926,6 @@ html[data-ui='off'] .nav-tab, html[data-ui='off'] .nav-brand {
   transition-delay: calc(var(--i) * var(--stagger));
 }
 
-/* ── sector toast: bottom-left crossing announcement ──────── */
-.sector-hud {
-  position: fixed; left: 18px; bottom: 18px; z-index: 900;
-  pointer-events: none;
-  display: flex; align-items: center; gap: 8px;
-  background: var(--obsidian-2);
-  border: 1px solid var(--slate-3);
-  box-shadow: var(--lift-1);
-  padding: 8px 13px;
-  font-size: 10px; letter-spacing: 0.14em;
-  color: var(--bone-dim);
-  -webkit-mask-size: 16px 16px; mask-size: 16px 16px;
-}
-.sector-hud b { color: var(--amber); }
-.hud-px {
-  width: 7px; height: 7px; background: var(--red);
-  animation: cursor-blink 0.9s steps(1, end) infinite;
-}
-.sector-hud.show { animation: dither-pop 0.32s both; }
-.sector-hud.hide { animation: hud-out 0.34s both; }
-@keyframes hud-out {
-  0% { opacity: 1; -webkit-mask-image: none; mask-image: none; }
-  35% { -webkit-mask-image: var(--dm4); mask-image: var(--dm4); }
-  70% { -webkit-mask-image: var(--dm2); mask-image: var(--dm2); }
-  100% { opacity: 0; -webkit-mask-image: var(--dm1); mask-image: var(--dm1); }
-}
-
 /* ── seam shimmer: threshold cells + sparks blink in frames ── */
 .edge-live {
   animation: cell-blink 2.4s steps(1, end) infinite;
@@ -2878,14 +2946,9 @@ html[data-ui='off'] .nav-tab, html[data-ui='off'] .nav-brand {
 
 @media (prefers-reduced-motion: reduce) {
   .block-wipe { display: none; }
-  .sector-hud { animation: none !important; -webkit-mask-image: none !important; mask-image: none !important; }
   .edge-live, .edge-spark { animation: none; }
   .edge-live { opacity: 0.5; }
 }
-@media (max-width: 640px) {
-  .sector-hud { left: 10px; bottom: 10px; font-size: 9px; }
-}
-
 /* ============================================================
    AS MONOGRAM — the signing mark in the transmission console.
    Ported from the old portfolio's framer-motion logo into the
@@ -3085,10 +3148,6 @@ html[data-ui='off'] .particle-face { display: none; }
 .crun-cmd {
   font-size: 12px; font-weight: 700; letter-spacing: 0.12em;
   color: var(--amber);
-}
-.crun-copy {
-  font-size: 12.5px; color: var(--bone-dim);
-  max-width: 42ch;
 }
 .crun-prompt {
   margin-top: 6px;

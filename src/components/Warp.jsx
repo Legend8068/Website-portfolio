@@ -11,21 +11,9 @@ import { bus } from '../lib/systemBus.jsx'
    It's the BlockLoader cascade from my-portfolio/, rethemed to
    the machine — frame-snapped, checker-textured, wordless.
 
-   SectorHud is the quieter cousin: whenever the scroll crosses
-   into a new sector (from the section logger), a small toast
-   materializes bottom-left — ENTERING SECTOR 05 · MEMMAP.
+   The crossing itself is silent: sector changes are still written
+   to the session log, but nothing is announced on screen.
    ============================================================ */
-
-/* sector order follows the page: manifest is read before the
-   kernel dive, so it holds 02 and the dive holds 03 */
-const SECTORS = {
-  boot: ['01', 'BOOT'],
-  manifest: ['02', 'ABOUT'],
-  kernel: ['03', 'EXPERIENCE'],
-  builds: ['04', 'PROJECTS'],
-  memory: ['05', 'SKILLS'],
-  transmit: ['06', 'CONTACT'],
-}
 
 const BLOCK_COUNT = 7
 /* Must stay in step with --fall / --stagger in styles.css: one phase
@@ -108,48 +96,10 @@ function BlockWipe() {
   )
 }
 
-/* ── the sector toast: announces every crossing ───────────── */
-function SectorHud() {
-  const [sec, setSec] = useState(null)   // ['05','MEMMAP']
-  const [phase, setPhase] = useState(null) // 'show' | 'hide'
-  const timers = useRef([])
-  const first = useRef(true)
-
-  useEffect(() => {
-    let lastId = null
-    const unsub = bus.subscribeLog(() => {
-      const log = bus.getLog()
-      const e = log[log.length - 1]
-      if (!e || e.type !== 'SECTION_ENTER' || e.detail === lastId) return
-      lastId = e.detail
-      // the page's own first paint isn't a "transition" — stay quiet
-      if (first.current) { first.current = false; return }
-      const s = SECTORS[e.detail]
-      if (!s) return
-      timers.current.forEach(clearTimeout)
-      setSec(s)
-      setPhase('show')
-      timers.current = [
-        setTimeout(() => setPhase('hide'), 1700),
-        setTimeout(() => setPhase(null), 2100),
-      ]
-    })
-    return () => { unsub(); timers.current.forEach(clearTimeout) }
-  }, [])
-
-  if (!phase || !sec) return null
-  return (
-    <div className={'sector-hud ' + phase} aria-hidden="true">
-      <i className="hud-px" /> ENTERING SECTOR {sec[0]} · <b>{sec[1]}</b>
-    </div>
-  )
-}
-
 export function Warp() {
   return (
     <>
       <BlockWipe />
-      <SectorHud />
     </>
   )
 }

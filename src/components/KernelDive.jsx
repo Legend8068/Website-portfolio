@@ -30,15 +30,17 @@ const seg = (p, a, b) => clamp((p - a) / (b - a), 0, 1)
    PROCESS TABLE — nine processes forked from one core.
    ============================================================ */
 const TILES = [
-  { role: 'Part-Time Tutor', org: 'MathVision', year: '2025–NOW', icon: 'cap', featured: true,
+  { role: 'Cloud Application Engineer Intern', org: 'Accenture · Singapore', year: '2026–NOW', icon: 'cloud',
+    detail: 'Helping migrate an internal geospatial data platform onto commercial AWS, working on the Python Lambdas behind its upload and validation flow. Built a local stand-in for the backend so the team can run the real code on a laptop and reproduce the awkward failures.' },
+  { role: 'Part-Time Tutor', org: 'MathVision', year: '2025–2026', icon: 'cap',
     detail: 'Tutor physics and maths one-on-one and in small groups, helping students rebuild core concepts and prepare for exams.' },
-  { role: 'Club Treasurer', org: 'Tchoukball Club · SUTD', year: '2025–NOW', icon: 'ledger',
+  { role: 'Club Treasurer', org: 'Tchoukball Club · SUTD', year: '2025–2026', icon: 'ledger',
     detail: 'Handling all finance planning as well as general planning for training and welfare purposes.' },
-  { role: 'Events & Welfare Director', org: 'Student Government', year: '2025', icon: 'flag',
+  { role: 'Events & Welfare Director', org: 'Student Government', year: '2025–2026', icon: 'flag',
     detail: 'Planning and executing welfare events for the community including treasure hunts and the SUTD Student Organisation Showcase.' },
   { role: 'Maritime Hackathon', org: 'NUS', year: '2025', icon: 'anchor',
     detail: 'Produced an analytics and dashboard solution for visualising different statistics for maritime companies.' },
-  { role: 'CatalystX Startathon', org: 'NTU', year: '2024', icon: 'bulb', featured: true,
+  { role: 'CatalystX Startathon', org: 'NTU', year: '2024', icon: 'bulb',
     detail: 'Won $200 for the Most Creative Idea for a biofuels startup concept aimed at making sustainable fuels more prevalent in daily life.' },
   { role: 'SIM UOL CSSC Hackathon', org: 'SIM', year: '2024', icon: 'code',
     detail: 'Designed and built a 3 level maze running and combat game within the hackathon timeframe.' },
@@ -46,8 +48,6 @@ const TILES = [
     detail: 'Produced a solution combining hardware and software to solve a medical related issue, producing an automated medicine pill box dispenser.' },
   { role: 'Crackerjack Convention', org: 'SUTD', year: '2023', icon: 'cards',
     detail: 'Facilitated the Crackerjack Convention, a multi disciplinary event bringing together innovators, designers, and engineers to collaborate and tackle real world 21st century challenges with creative solutions.' },
-  { role: 'Biodiversity Conservation', org: 'ACCB · Cambodia', year: '2023', icon: 'leaf',
-    detail: 'Worked with Angkor Centre for Conservation of Biodiversity in Siem Reap for the rehabilitation and conservation of endangered species.' },
 ]
 
 function TileIcon({ kind }) {
@@ -61,7 +61,7 @@ function TileIcon({ kind }) {
     case 'code': return <svg viewBox="0 0 24 24" {...P}><path d="m8.5 8-4 4 4 4M15.5 8l4 4-4 4M13 5.5l-2.5 13"/></svg>
     case 'bolt': return <svg viewBox="0 0 24 24" {...P}><path d="M13 3 5.5 13.5H11L10 21l7.8-11H12.4L13 3Z"/></svg>
     case 'cards': return <svg viewBox="0 0 24 24" {...P}><rect x="4" y="6" width="9" height="13" transform="rotate(-8 8.5 12.5)"/><rect x="11" y="5" width="9" height="13" transform="rotate(9 15.5 11.5)"/></svg>
-    case 'leaf': return <svg viewBox="0 0 24 24" {...P}><path d="M5 19C5 9.5 10.5 4.5 19.5 4.5 19.5 14 14 19 5 19Z"/><path d="M5 19c3-5.5 7-9.5 11-12"/></svg>
+    case 'cloud': return <svg viewBox="0 0 24 24" {...P}><path d="M7 18.5h9.5a3.75 3.75 0 0 0 .4-7.48A5.5 5.5 0 0 0 6.6 9.9 3.8 3.8 0 0 0 7 18.5Z"/><path d="M12 8.5v4.2m0 0 2-2m-2 2-2-2"/></svg>
     default: return null
   }
 }
@@ -395,7 +395,7 @@ export function KernelDive() {
                   return (
                     <article
                       key={t.role}
-                      className={'proc-tile' + (t.featured ? ' featured' : '')}
+                      className="proc-tile"
                       ref={(el) => { tileRefs.current[i] = el }}
                       tabIndex={0}
                       onClick={(e) => e.currentTarget.classList.toggle('open')}

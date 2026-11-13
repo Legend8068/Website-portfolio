@@ -79,7 +79,7 @@ def generate_resume(output_pdf_path, preview_png_path=None):
                 'subtitle': 'BEng, Computer Science and Design',
                 'bullets': [
                     'Minor in Design and Artificial Intelligence, along with the Computer Science and Design major',
-                    'Coursework in software development, AI/ML fundamentals, systems thinking and design'
+                    'Coursework in data structures and algorithms, software development, machine learning and computer systems'
                 ]
             },
             {
@@ -87,7 +87,6 @@ def generate_resume(output_pdf_path, preview_png_path=None):
                 'date': '2020 – 2024',
                 'subtitle': 'IB Diploma and IGCSE',
                 'bullets': [
-                    'Completed internationally recognised curricula, IB Diploma and IGCSE',
                     'Certificate of Academic Excellence and International Certificate of Education (Distinction)'
                 ]
             }
@@ -96,17 +95,18 @@ def generate_resume(output_pdf_path, preview_png_path=None):
             {
                 'title_parts': [('Accenture', 'Times-Bold'), (', Singapore', 'Times-Roman')],
                 'date': 'Sep 2026 – Present',
-                'subtitle': 'Cloud Application and Data Engineering Intern',
+                'subtitle': 'Cloud Application Engineer Intern',
                 'bullets': [
-                    ['Engineered serverless REST APIs and web backends on AWS (Lambda, API Gateway, DynamoDB), achieving reliable, low latency',
-                     'request handling through structured status handlers, CORS rules, and CloudWatch tracking.'],
-                    ['Built automated data export pipelines bypassing API Gateway 6 MB payload limits for high volume datasets and strengthened API',
-                     'security and access governance, preventing unauthorized requests across user tiers and added role based access control via Microsoft',
-                     'Entra ID, Cognito, and JWT Authorizers.'],
-                    ['Enhanced server reliability and access across AWS infrastructure, ensuring continuous service uptime by deploying automated',
-                     'maintenance scripts.'],
-                    ['Administered enterprise Privileged Access Management (PAM) via CyberArk, ensuring zero credential exposure and strict access',
-                     'compliance by onboarding, editing, configuring, and troubleshooting privileged accounts and permissions.']
+                    ['Helped migrate an internal geospatial data platform onto commercial AWS, covering around 35 dataset types across its upload,',
+                     'validation and versioning flow, by writing Python Lambda functions and wiring up the API Gateway routes, S3 triggers,',
+                     'DynamoDB tables and SNS topics defined in its SAM templates.'],
+                    ['Cut the wait to test a backend change from a cloud deployment to a few seconds by building a local stand-in that runs all 10 production',
+                     'Lambda functions unchanged against fakes for S3, DynamoDB and SNS, with a 66 step run compared against saved output so the team',
+                     'could see what a change had broken before it went out.'],
+                    ["Traced 5 defects in code that was already live, including a deployment template pointing at the wrong handler and two frontend calls",
+                     "to API routes that do not exist, by reading the inherited backend function by function and writing the team's reference notes on it."],
+                    ['Kept exports of large datasets working past the 6 MB API Gateway response limit and restricted API access by role using Microsoft',
+                     'Entra ID, Cognito and JWT authorizers, with CloudWatch logs to trace requests that failed part way through.']
                 ]
             },
             {
@@ -138,58 +138,54 @@ def generate_resume(output_pdf_path, preview_png_path=None):
         ]),
         ('PROJECTS AND LEADERSHIP', [
             {
-                'title': 'World Cup Tracker',
+                'title': 'Detecting AI Generated Text, 50.007 Machine Learning',
                 'date': '2026',
                 'bullets': [
-                    'Built a live match tracker for the 2026 FIFA World Cup using React and JavaScript, pulling real time scores, standings and fixtures',
-                    'Designed the interface to refresh data in place so users follow matches without a page reload'
+                    ['Raised Macro-F1 from 0.66 to 0.80 on the class Kaggle leaderboard by writing logistic regression, PCA and KNN from scratch in Python,',
+                     'with no deep learning and no pretrained models'],
+                    ['Caught that accuracy was scoring a useless model well, because the corpus ran 62.5% machine written and always guessing machine',
+                     'scored 62.5% while finding no human text at all, so we moved our scoring onto Macro-F1 and judged every later change on both classes'],
+                    ['Closed a gap between local scores and leaderboard scores by scoring writing style rather than topic, and by building a validation split',
+                     'that matched how the graded test set was sampled']
                 ]
             },
             {
                 'title': 'SG MeetHalfway',
                 'date': '2026',
                 'bullets': [
-                    "Built a web app in React and Python that finds a fair meeting spot for a group using everyone's location and public transit data",
-                    'Weighted results by travel time rather than distance so the venue is equal effort for each person'
+                    'Cut the worst commute in a group meet up by picking the venue on real transit time rather than distance on a map',
+                    'Weighted every leg with routing API times in a React and Python web app, then searched for the point with the smallest worst case trip'
+                ]
+            },
+            {
+                'title': 'World Cup Tracker',
+                'date': '2026',
+                'bullets': [
+                    'Pulled scores, standings and fixtures for the 2026 World Cup into one live view, built in React and JavaScript',
+                    'Reconciled three feeds that disagree during a match into a single state, so the page updates in place and never contradicts itself'
                 ]
             },
             {
                 'title': 'MakanMates',
                 'date': '2026',
                 'bullets': [
-                    "Built an Android app that recommends fair food locations for a group of friends using everyone's location and public transit data",
-                    'Ranked nearby restaurants by combined travel time for the group, helping friends settle on a spot without lengthy back and forth'
+                    "Ranked food spots by the group's combined transit time so no one travels twice as far as everyone else, as a native Android app",
+                    'Wrote it in Java with Firebase for sign in and shared state, caching lookups so a recommendation is ready without a connection'
                 ]
             },
             {
                 'title': 'Telegram Task Bot',
                 'date': '2026',
                 'bullets': [
-                    'Building a Python based Telegram bot that tracks tasks and deadlines and sends reminders directly in chat',
-                    'Cutting the friction of switching between a task app and the chats where work actually gets assigned'
+                    "Turning free text messages such as 'next fri' and 'EOD' into scheduled reminders inside the chat where the task was assigned",
+                    'Writing it in Python against a SQLite job queue so reminders survive restarts and time zone changes'
                 ]
             },
             {
                 'title': 'Maritime Analytics Dashboard, Maritime Hackathon, NUS',
                 'date': '2025',
                 'bullets': [
-                    'Built a dashboard surfacing key operating statistics for maritime companies, turning raw data into views a team could act on'
-                ]
-            },
-            {
-                'title': 'Project Ancora, with Youth for Causes',
-                'date': '2024',
-                'subtitle': 'Head',
-                'bullets': [
-                    'Served as Head of Project Ancora, a student initiative in partnership with Youth for Causes to protect and care for stray animals'
-                ]
-            },
-            {
-                'title': 'Physics Society',
-                'date': '2024',
-                'subtitle': 'Organising Committee',
-                'bullets': [
-                    'Served on the Organising Committee, running events, a podcast and newsletters to make physics ideas more approachable to peers'
+                    'Turned raw operating data into a dashboard a team could act on, built with a group over a weekend hackathon'
                 ]
             },
             {
@@ -197,7 +193,7 @@ def generate_resume(output_pdf_path, preview_png_path=None):
                 'date': '2024',
                 'subtitle': 'Workshop Facilitator',
                 'bullets': [
-                    'Served as Workshop Facilitator at Crackerjack Convention, an annual event helping young people build 21st century skills'
+                    'Ran workshops at a multi disciplinary convention, walking groups of students through problems with no set answer'
                 ]
             }
         ]),
@@ -230,10 +226,10 @@ def generate_resume(output_pdf_path, preview_png_path=None):
     ]
 
     skills = [
-        'Languages: Python, JavaScript, TypeScript, Java, C, C++, HTML, CSS',
-        'Frameworks and Libraries: React, Node.js, Express.js, Next.js, TensorFlow, NumPy, Pandas, Matplotlib, OpenCV',
-        'Tools and Platforms: AWS (Lambda, EC2, DynamoDB, S3), CyberArk, Postman, Git and GitHub, Firebase, Google Cloud, MySQL, Figma',
-        'Areas of Interest: AI/ML fundamentals, web app development, scripting and automation pipelines, bot development, UI design'
+        'Languages: Python, JavaScript, TypeScript, Java, C, C++, SQL, HTML, CSS',
+        'Frameworks and Libraries: React, Node.js, Express.js, Next.js, TensorFlow, NumPy, Pandas, GeoPandas, Matplotlib, OpenCV',
+        'Tools and Platforms: AWS (Lambda, API Gateway, S3, DynamoDB, SNS, SAM), Google Cloud, Linux, Git and GitHub, Firebase, MySQL',
+        'Areas of Interest: AI/ML workflows, cloud and backend engineering, data pipelines, developer tooling, UI design'
     ]
 
     for sec_title, items in sections:

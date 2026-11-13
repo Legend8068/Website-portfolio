@@ -23,7 +23,9 @@ const BOOT_T = Date.now()
 /* ── React channel state ─────────────────────────────────── */
 let state = {
   modules: { graphics3d: true, ui: true, ai: true },
-  buildFilter: null,
+  /* the skill selection: an array of tech ids, empty when nothing is
+     picked. A build survives the filter if it uses ANY of them. */
+  techFilter: [],
   panic: null, // null | reason string
 }
 const subs = new Set()
@@ -62,6 +64,37 @@ export const bus = {
     if (id) root.dataset.tech = id
     else delete root.dataset.tech
   },
+
+  /* ── selection channel ────────────────────────────────────
+     Selection is low frequency, so unlike hover it goes through
+     the React channel and the lit styling rides on a class the
+     components render. The one DOM attribute it does write is
+     data-sel, which exists so the hover rules can stand down
+     while a selection is holding the board. */
+  syncSelAttr() {
+    const root = document.documentElement
+    const sel = state.techFilter
+    if (sel.length) root.dataset.sel = sel.join(' ')
+    else delete root.dataset.sel
+  },
+  toggleTech(id) {
+    const cur = state.techFilter
+    const next = cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]
+    bus.set({ techFilter: next })
+    bus.syncSelAttr()
+    bus.log('FILTER_SET', next.length ? next.join('+') : 'null')
+  },
+  setTechFilter(ids) {
+    bus.set({ techFilter: ids })
+    bus.syncSelAttr()
+    bus.log('FILTER_SET', ids.length ? ids.join('+') : 'null')
+  },
+  clearTechFilter() {
+    if (!state.techFilter.length) return
+    bus.set({ techFilter: [] })
+    bus.syncSelAttr()
+    bus.log('FILTER_SET', 'null')
+  },
   setBuildHighlight(slug) {
     const root = document.documentElement
     if (slug) root.dataset.build = slug
@@ -81,8 +114,10 @@ export const bus = {
   subscribeLog(fn) { logSubs.add(fn); return () => logSubs.delete(fn) },
   stamp,
 
-  downloadLog() {
-    bus.log('DOWNLOAD', 'session receipt')
+  /* Builds the receipt and hands back a blob URL. The caller points an
+     <a target="_blank"> at it, which is how the resume button opens its
+     PDF — a real navigation, so no popup blocker is ever consulted. */
+  receiptUrl() {
     const now = new Date()
     const pdf = buildReceipt({
       events: logBuf,
@@ -107,14 +142,7 @@ export const bus = {
     const bytes = new Uint8Array(pdf.length)
     for (let i = 0; i < pdf.length; i++) bytes[i] = pdf.charCodeAt(i) & 0xff
     const blob = new Blob([bytes], { type: 'application/pdf' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'AYUSH-OS-SESSION-RECEIPT.pdf'
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
-    setTimeout(() => URL.revokeObjectURL(url), 1000)
+    return URL.createObjectURL(blob)
   },
 
   /* panic control */

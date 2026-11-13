@@ -92,7 +92,7 @@ export function describe(e) {
       return `Followed a link to ${trunc(d.replace(/^https?:\/\//, ''), 34)}`
     }
     case 'RESUME_OPEN': return 'Opened the resume PDF'
-    case 'DOWNLOAD': return 'Downloaded this receipt'
+    case 'DOWNLOAD': return 'Opened this receipt'
     case 'PANIC': return `Triggered a kernel panic (${trunc(d, 28)})`
     case 'REBOOT': return 'Rebooted after the panic'
     default: return `${e.type}${d ? ' - ' + trunc(d, 34) : ''}`

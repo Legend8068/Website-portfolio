@@ -13,30 +13,31 @@
    x / y are percentage positions on the motherboard (MEMORY
    MAP). addr is the chip's memory address. kind drives the glyph
    and the manifest focus grouping. */
-/* 16 chips, every one named on the résumé. Most are loaded by a build
-   below; Next.js, TypeScript and Express.js are capability chips that
-   no featured build claims, so they read as "core only" in the probe
-   readout rather than pretending a link that isn't there.
+/* 16 chips, every one named on the résumé. Most are claimed by a build
+   below; TypeScript and AWS are capability chips that no featured build
+   claims, so they read as "core only" in the probe readout rather than
+   pretending a link that isn't there. Git is deliberately absent: every
+   build uses it, so as a filter it selects everything and says nothing.
    Two columns per side, four above the core's row and four below. */
 export const TECHS = [
-  /* ── left bank: languages and runtimes ── */
+  /* ── left bank: languages, runtimes and the data stack ── */
   { id: 'react', name: 'React', addr: '0x01A3', kind: 'ui', pins: 8, x: 12, y: 8, note: 'Component-based UI — the interface layer of every build.' },
-  { id: 'nextjs', name: 'Next.js', addr: '0x02F0', kind: 'ui', pins: 8, x: 12, y: 20, note: 'Full-stack React framework — routing, SSR, the works.' },
-  { id: 'typescript', name: 'TypeScript', addr: '0x0410', kind: 'lang', pins: 6, x: 30, y: 32, note: 'Static types — the compiler catches it before the user does.' },
-  { id: 'javascript', name: 'JavaScript', addr: '0x05C8', kind: 'lang', pins: 6, x: 30, y: 44, note: 'The language of the browser — where interaction lives.' },
-  { id: 'python', name: 'Python', addr: '0x06D4', kind: 'lang', pins: 6, x: 30, y: 56, note: 'Scripting, backends, and the glue between services.' },
-  { id: 'java', name: 'Java', addr: '0x0840', kind: 'lang', pins: 8, x: 30, y: 68, note: 'The Android runtime — native apps that ship to a phone.' },
-  { id: 'nodejs', name: 'Node.js', addr: '0x0722', kind: 'sys', pins: 8, x: 12, y: 80, note: 'JavaScript on the server — one language, both ends.' },
-  { id: 'express', name: 'Express.js', addr: '0x0E44', kind: 'sys', pins: 6, x: 12, y: 92, note: 'The thin API layer — routes, middleware, nothing spare.' },
-  /* ── right bank: libraries, services and tooling ── */
-  { id: 'threejs', name: 'Three.js', addr: '0x0955', kind: 'ui', pins: 8, x: 88, y: 8, note: 'Real-time 3D in the browser — WebGL without the boilerplate.' },
-  { id: 'gsap', name: 'GSAP', addr: '0x0B60', kind: 'ui', pins: 6, x: 88, y: 20, note: 'Scroll choreography — the timeline behind this machine.' },
-  { id: 'leaflet', name: 'Leaflet', addr: '0x0C2C', kind: 'sys', pins: 6, x: 70, y: 32, note: 'Interactive maps — the canvas for SG-MeetHalfway.' },
-  { id: 'telegram-api', name: 'Telegram', addr: '0x0D90', kind: 'sys', pins: 6, x: 70, y: 44, note: 'Bot platform API — chat becomes the interface.' },
-  { id: 'firebase', name: 'Firebase', addr: '0x0F18', kind: 'sys', pins: 6, x: 70, y: 56, note: 'Hosted auth and realtime data — a backend without running one.' },
-  { id: 'sqlite', name: 'SQLite', addr: '0x1024', kind: 'sys', pins: 6, x: 70, y: 68, note: 'A database in a single file — state that survives a restart.' },
-  { id: 'vite', name: 'Vite', addr: '0x11B0', kind: 'sys', pins: 6, x: 88, y: 80, note: 'The dev server and bundler this machine is built on.' },
-  { id: 'git', name: 'Git', addr: '0x0A18', kind: 'sys', pins: 6, x: 88, y: 92, note: 'Version control — nothing is erased, only committed.' },
+  { id: 'typescript', name: 'TypeScript', addr: '0x0410', kind: 'lang', pins: 6, x: 12, y: 20, note: 'Static types — the compiler catches it before the user does.' },
+  { id: 'javascript', name: 'JavaScript', addr: '0x05C8', kind: 'lang', pins: 6, x: 30, y: 32, note: 'The language of the browser — where interaction lives.' },
+  { id: 'python', name: 'Python', addr: '0x06D4', kind: 'lang', pins: 6, x: 30, y: 44, note: 'Backends, models and the glue between services.' },
+  { id: 'java', name: 'Java', addr: '0x0840', kind: 'lang', pins: 8, x: 30, y: 56, note: 'The Android runtime — native apps that ship to a phone.' },
+  { id: 'nodejs', name: 'Node.js', addr: '0x0722', kind: 'sys', pins: 8, x: 30, y: 68, note: 'JavaScript on the server — one language, both ends.' },
+  { id: 'numpy', name: 'NumPy', addr: '0x02F0', kind: 'sys', pins: 6, x: 12, y: 80, note: 'Arrays and linear algebra — the maths under a model written from scratch.' },
+  { id: 'pandas', name: 'Pandas', addr: '0x0E44', kind: 'sys', pins: 6, x: 12, y: 92, note: 'Dataframes — loading, cleaning and reshaping a corpus before it is scored.' },
+  /* ── right bank: platforms, libraries and tooling ── */
+  { id: 'aws', name: 'AWS', addr: '0x12C0', kind: 'sys', pins: 8, x: 88, y: 8, note: 'Serverless backends — Lambda, API Gateway, S3 and DynamoDB, defined in SAM.' },
+  { id: 'threejs', name: 'Three.js', addr: '0x0955', kind: 'ui', pins: 8, x: 88, y: 20, note: 'Real-time 3D in the browser — WebGL without the boilerplate.' },
+  { id: 'gsap', name: 'GSAP', addr: '0x0B60', kind: 'ui', pins: 6, x: 70, y: 32, note: 'Scroll choreography — the timeline behind this machine.' },
+  { id: 'leaflet', name: 'Leaflet', addr: '0x0C2C', kind: 'sys', pins: 6, x: 70, y: 44, note: 'Interactive maps — the canvas for SG-MeetHalfway.' },
+  { id: 'telegram-api', name: 'Telegram', addr: '0x0D90', kind: 'sys', pins: 6, x: 70, y: 56, note: 'Bot platform API — chat becomes the interface.' },
+  { id: 'firebase', name: 'Firebase', addr: '0x0F18', kind: 'sys', pins: 6, x: 70, y: 68, note: 'Hosted auth and realtime data — a backend without running one.' },
+  { id: 'sqlite', name: 'SQLite', addr: '0x1024', kind: 'sys', pins: 6, x: 88, y: 80, note: 'A database in a single file — state that survives a restart.' },
+  { id: 'vite', name: 'Vite', addr: '0x11B0', kind: 'sys', pins: 6, x: 88, y: 92, note: 'The dev server and bundler this machine is built on.' },
 ]
 
 export const TECH_BY_ID = Object.fromEntries(TECHS.map((t) => [t.id, t]))
@@ -53,7 +54,7 @@ export const BUILDS = [
     summary: 'A web app that computes a fair meeting point for a group, weighted by real transit time.',
     incident: 'A geometric centre is unfair — it ignores that trains do not run in straight lines. Some friend always eats the whole commute.',
     resolution: 'Weight every leg by real transit time from routing APIs, then search for the point that minimises the group’s worst commute.',
-    uses: ['react', 'leaflet', 'javascript', 'git'],
+    uses: ['react', 'javascript', 'leaflet', 'python'],
     link: 'https://sg-meet-halfway.vercel.app/',
     photo: '/builds/sg-meethalfway.png',
   },
@@ -64,7 +65,7 @@ export const BUILDS = [
     summary: 'A live match tracker for the 2026 FIFA World Cup — real-time scores, standings and fixtures in one interface.',
     incident: 'Following a tournament means juggling three tabs: the score here, the group table there, the next kick-off somewhere else. By the time the picture assembles, the moment has passed.',
     resolution: 'Poll the feeds on a timer and reconcile them into a single state, so scores, standings and fixtures all update in place with no refresh.',
-    uses: ['react', 'javascript', 'nodejs', 'git'],
+    uses: ['react', 'javascript', 'nodejs'],
     link: 'https://wc2026tracker-seven.vercel.app/',
     photo: '/builds/worldcup.png',
   },
@@ -75,7 +76,7 @@ export const BUILDS = [
     summary: 'A human-versus-machine text classifier for 50.007 Machine Learning — logistic regression, PCA and KNN written from scratch, then a classical-ML run at the Kaggle leaderboard. No deep learning, no LLMs.',
     incident: 'Our internal tests showed high accuracy, but the actual leaderboard scores were much lower. Even after building many complex models, the gap remained because the training data and testing data were fundamentally different. This meant we could not trust our own progress metrics.',
     resolution: 'We changed our strategy to analyze writing style instead of the topic. We also built a custom testing system that accurately mirrored the final grading environment. This allowed us to properly evaluate our models and ultimately secure a strong final score.',
-    uses: ['python', 'git'],
+    uses: ['python', 'numpy', 'pandas'],
     /* the deck is the deliverable — served straight out of /builds */
     link: '/builds/detecting-genai-text-slides.pdf',
     linkLabel: 'Open the slides',
@@ -88,7 +89,7 @@ export const BUILDS = [
     summary: 'An Android app that recommends food spots for a group, weighting everyone’s location by real transit time so the pick is fair.',
     incident: 'Deciding where to eat as a group defaults to whoever shouts loudest, and someone always ends up travelling twice as far as everybody else for it.',
     resolution: 'Compute transit weighted travel times across every group member’s location to rank fair food venues, shipped as a native Android app for one tap decisions on the way out the door.',
-    uses: ['java', 'firebase', 'git'],
+    uses: ['java', 'firebase'],
     /* no live deployment yet — the link is a recorded walkthrough */
     link: '/builds/makanmates-demo.mp4',
     linkLabel: 'Watch the demo',
@@ -104,7 +105,7 @@ export const BUILDS = [
     summary: 'The system you are inside right now — a portfolio built as a working pixel operating system.',
     incident: 'A portfolio that just lists skills is forgettable. A recruiter closes the tab and remembers nothing.',
     resolution: 'Build the portfolio itself as an interconnected machine: a real shell, live module toggles, a motherboard memory map, and a session log you can download.',
-    uses: ['react', 'gsap', 'javascript', 'threejs', 'vite', 'git'],
+    uses: ['react', 'javascript', 'gsap', 'threejs', 'vite'],
   },
   {
     slug: 'taskbot',
@@ -113,7 +114,7 @@ export const BUILDS = [
     summary: 'A Telegram bot that parses free-text chat messages into scheduled reminders and tasks.',
     incident: 'Switching to a separate task app creates friction. The task gets forgotten in the gap between chat and calendar.',
     resolution: 'Parse intent and time out of free text ("next fri", "EOD"), hand it to a persistent job queue so reminders survive restarts and time-zones.',
-    uses: ['python', 'telegram-api', 'sqlite', 'git'],
+    uses: ['python', 'telegram-api', 'sqlite'],
   },
 ]
 
@@ -146,7 +147,7 @@ export const MANIFEST = {
     { label: 'generative & systems programming', focus: 'sys' },
   ],
   availability: 'SWE / creative-engineering internships · S26+',
-  currently: 'Cloud Application & Data Intern @ Accenture · Tutor @ MathVision · Director @ SUTD ROOT',
+  currently: 'Cloud Application Engineer Intern @ Accenture · CS&D undergrad @ SUTD',
 }
 
 /* ── PANIC_REGISTERS — real skills masquerading as CPU state ── */

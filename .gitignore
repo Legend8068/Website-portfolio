@@ -5,3 +5,5 @@ dist
 .claude
 graphify-out
 *.log
+output/
+resume_preview.png
